@@ -38,7 +38,10 @@ export default function RegisterPage(): JSX.Element {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-      const payload = (await response.json()) as { success: boolean; error?: string };
+      const contentType = response.headers.get("content-type") ?? "";
+      const payload = contentType.includes("application/json")
+        ? ((await response.json()) as { success: boolean; error?: string })
+        : { success: false, error: "Unexpected server response." };
 
       if (!response.ok || !payload.success) {
         toast({
