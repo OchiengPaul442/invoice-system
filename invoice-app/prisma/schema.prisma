@@ -1,0 +1,214 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String          @id @default(cuid())
+  email           String          @unique
+  password        String
+  name            String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  profile         UserProfile?
+  invoices        Invoice[]
+  clients         Client[]
+  invoiceSettings InvoiceSettings?
+
+  @@map("users")
+}
+
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName    String?
+  businessAddress String?
+  businessCity    String?
+  businessState   String?
+  businessCountry String   @default("Uganda")
+  businessZip     String?
+  businessPhone   String?
+  businessEmail   String?
+  businessWebsite String?
+  taxId           String?
+  currency        String   @default("UGX")
+  logoPath        String?
+  primaryColor    String   @default("#2563EB")
+  accentColor     String   @default("#0F172A")
+  bankName        String?
+  bankAccount     String?
+  bankBranch      String?
+  swiftCode       String?
+  paymentNotes    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model InvoiceSettings {
+  id                  String       @id @default(cuid())
+  userId              String       @unique
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultTemplate     TemplateType @default(CLASSIC)
+  defaultPaymentTerms Int          @default(30)
+  defaultTaxRate      Decimal      @default(0) @db.Decimal(5, 2)
+  defaultTaxLabel     String       @default("VAT")
+  defaultCurrency     String       @default("UGX")
+  invoicePrefix       String       @default("INV")
+  currentSequence     Int          @default(0)
+  currentYear         Int          @default(2025)
+  defaultFooter       String?
+  sendCopyToSelf      Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@map("invoice_settings")
+}
+
+model Client {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  email           String
+  company         String?
+  phone           String?
+  website         String?
+  address         String?
+  city            String?
+  state           String?
+  country         String?
+  zipCode         String?
+  defaultCurrency String?
+  taxId           String?
+  notes           String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  invoices        Invoice[]
+
+  @@map("clients")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum TemplateType {
+  CLASSIC
+  MODERN
+  MINIMAL
+  MILESTONE
+  RETAINER
+}
+
+enum BillingType {
+  HOURLY
+  FIXED
+  RETAINER
+  MILESTONE
+  LICENSE
+}
+
+model Invoice {
+  id                  String           @id @default(cuid())
+  userId              String
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId            String?
+  client              Client?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  invoiceNumber       String
+  status              InvoiceStatus    @default(DRAFT)
+  templateType        TemplateType     @default(CLASSIC)
+  billingType         BillingType      @default(FIXED)
+  issueDate           DateTime         @default(now())
+  dueDate             DateTime
+  servicePeriodStart  DateTime?
+  servicePeriodEnd    DateTime?
+  billToName          String
+  billToEmail         String
+  billToCompany       String?
+  billToAddress       String?
+  billToCity          String?
+  billToCountry       String?
+  billToTaxId         String?
+  lineItems           Json
+  milestones          Json?
+  currency            String           @default("UGX")
+  subtotal            Decimal          @db.Decimal(15, 2)
+  discountType        String?
+  discountValue       Decimal?         @db.Decimal(15, 2)
+  discountAmount      Decimal?         @db.Decimal(15, 2)
+  taxLabel            String           @default("VAT")
+  taxRate             Decimal          @default(0) @db.Decimal(5, 2)
+  taxAmount           Decimal          @db.Decimal(15, 2)
+  total               Decimal          @db.Decimal(15, 2)
+  amountPaid          Decimal          @default(0) @db.Decimal(15, 2)
+  balanceDue          Decimal          @db.Decimal(15, 2)
+  primaryColor        String?
+  accentColor         String?
+  showLogo            Boolean          @default(true)
+  showSignature       Boolean          @default(false)
+  projectName         String?
+  projectDescription  String?
+  notes               String?
+  footer              String?
+  paymentTerms        String?
+  paymentInstructions String?
+  viewedAt            DateTime?
+  paidAt              DateTime?
+  sentAt              DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  payments            Payment[]
+  activityLog         InvoiceActivity[]
+
+  @@unique([userId, invoiceNumber])
+  @@index([userId, status])
+  @@index([userId, clientId])
+  @@index([userId, createdAt])
+  @@map("invoices")
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(15, 2)
+  method    String
+  reference String?
+  notes     String?
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@map("payments")
+}
+
+model InvoiceActivity {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  action    String
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
+  @@map("invoice_activities")
+}
