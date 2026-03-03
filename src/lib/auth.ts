@@ -1,10 +1,9 @@
 import bcrypt from "bcryptjs";
-import NextAuth from "next-auth";
+import { getServerSession, type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import type { NextAuthConfig } from "next-auth";
 import { prisma } from "@/lib/prisma";
 
-export const authConfig = {
+export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -48,12 +47,14 @@ export const authConfig = {
       return token;
     },
     session({ session, token }) {
-      if (token && session.user) {
+      if (token?.id && session.user) {
         session.user.id = token.id as string;
       }
       return session;
     },
   },
-} satisfies NextAuthConfig;
+};
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export function auth() {
+  return getServerSession(authOptions);
+}
