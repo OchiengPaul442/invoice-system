@@ -81,11 +81,11 @@ export default function RegisterPage(): JSX.Element {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-surface-muted px-4">
-      <Card className="w-full max-w-md border-surface-border shadow-md">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-[#fff7eb] px-4 py-8">
+      <Card className="w-full max-w-md rounded-2xl border-surface-border shadow-md">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-ink">
-            Create your Invoice-App account
+            Create your InvoiceFlow account
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -130,7 +130,7 @@ export default function RegisterPage(): JSX.Element {
                 Sign in
               </Link>
             </div>
-            <Button className="w-full" disabled={isSubmitting} type="submit">
+            <Button className="w-full rounded-xl" disabled={isSubmitting} type="submit">
               {isSubmitting ? "Creating account..." : "Create account"}
             </Button>
           </form>

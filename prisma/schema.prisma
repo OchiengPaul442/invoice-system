@@ -44,8 +44,8 @@ model UserProfile {
   taxId           String?
   currency        String   @default("UGX")
   logoPath        String?
-  primaryColor    String   @default("#2563EB")
-  accentColor     String   @default("#0F172A")
+  primaryColor    String   @default("#0F766E")
+  accentColor     String   @default("#1F2937")
   bankName        String?
   bankAccount     String?
   bankBranch      String?

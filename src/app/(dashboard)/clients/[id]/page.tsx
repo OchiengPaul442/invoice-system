@@ -7,6 +7,7 @@ import { ClientForm } from "@/components/client/ClientForm";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface ClientInvoice {
@@ -39,16 +40,22 @@ interface ClientDetail {
 export default function ClientDetailPage(): JSX.Element {
   const params = useParams<{ id: string }>();
   const [client, setClient] = useState<ClientDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
 
   const load = useCallback(async (): Promise<void> => {
-    const response = await fetch(`/api/clients/${params.id}`, { cache: "no-store" });
-    const payload = (await response.json()) as {
-      success: boolean;
-      data?: ClientDetail;
-    };
-    if (payload.success && payload.data) {
-      setClient(payload.data);
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/clients/${params.id}`, { cache: "no-store" });
+      const payload = (await response.json()) as {
+        success: boolean;
+        data?: ClientDetail;
+      };
+      if (payload.success && payload.data) {
+        setClient(payload.data);
+      }
+    } finally {
+      setIsLoading(false);
     }
   }, [params.id]);
 
@@ -56,8 +63,20 @@ export default function ClientDetailPage(): JSX.Element {
     void load();
   }, [load]);
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="space-y-3 pt-6">
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-5 w-1/2" />
+          <Skeleton className="h-52 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!client) {
-    return <div className="text-sm text-ink-muted">Loading client...</div>;
+    return <div className="text-sm text-red-600">Client not found.</div>;
   }
 
   return (

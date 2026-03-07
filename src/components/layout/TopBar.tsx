@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell } from "lucide-react";
+import { Bell, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const titleMap: Record<string, string> = {
@@ -16,22 +16,28 @@ const titleMap: Record<string, string> = {
 export function TopBar(): JSX.Element {
   const pathname = usePathname();
 
-  const matched = Object.keys(titleMap).find((key) =>
-    pathname === key || pathname.startsWith(`${key}/`),
+  const matched = Object.keys(titleMap).find(
+    (key) => pathname === key || pathname.startsWith(`${key}/`),
   );
-  const title = matched ? titleMap[matched] : "Invoice-App";
+  const title = matched ? titleMap[matched] : "InvoiceFlow";
 
   return (
-    <header className="sticky top-0 z-20 border-b border-surface-border bg-white/95 px-4 py-3 backdrop-blur md:px-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-ink">{title}</h1>
+    <header className="sticky top-0 z-20 border-b border-surface-border bg-white/90 px-4 py-3 backdrop-blur md:px-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-[0.2em] text-brand-700">Workspace</p>
+          <h1 className="truncate text-lg font-semibold text-ink">{title}</h1>
+        </div>
         <div className="flex items-center gap-2">
-          <Button asChild size="sm">
-            <Link href="/invoices/new">New Invoice</Link>
+          <Button asChild className="h-9 rounded-xl px-3" size="sm">
+            <Link href="/invoices/new">
+              <Plus className="h-4 w-4" />
+              New Invoice
+            </Link>
           </Button>
           <button
             aria-label="Notifications"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-surface-border text-ink-muted transition-colors hover:bg-slate-50 hover:text-ink"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-surface-border text-ink-muted transition-colors hover:bg-slate-50 hover:text-ink"
             type="button"
           >
             <Bell className="h-4 w-4" />

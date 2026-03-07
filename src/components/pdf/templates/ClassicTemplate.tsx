@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
 });
 
 export function ClassicTemplate({ invoice, profile }: PDFTemplateProps): JSX.Element {
-  const color = invoice.primaryColor || profile?.primaryColor || "#2563eb";
+  const color = invoice.primaryColor || profile?.primaryColor || "#0f766e";
   const lineItems = toLineItems(invoice.lineItems);
 
   return (

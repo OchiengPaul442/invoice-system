@@ -8,7 +8,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 
 const styles = StyleSheet.create({
   page: { fontFamily: "Helvetica", fontSize: 10, color: "#0f172a", padding: 38 },
-  title: { fontSize: 24, fontFamily: "Helvetica-Bold", color: "#2563eb" },
+  title: { fontSize: 24, fontFamily: "Helvetica-Bold", color: "#0f766e" },
   meta: { fontSize: 9, color: "#64748b", marginTop: 2 },
   tableHeader: { flexDirection: "row", backgroundColor: "#eff6ff", padding: 6, marginTop: 14 },
   tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#e2e8f0", paddingVertical: 7, paddingHorizontal: 6 },
@@ -30,7 +30,7 @@ function milestoneStatus(status: "pending" | "completed" | "invoiced"): string {
 }
 
 export function MilestoneTemplate({ invoice }: PDFTemplateProps): JSX.Element {
-  const color = invoice.primaryColor || "#2563eb";
+  const color = invoice.primaryColor || "#0f766e";
   const milestones = toMilestones(invoice.milestones || []);
   const lineItems = toLineItems(invoice.lineItems);
 
@@ -39,7 +39,7 @@ export function MilestoneTemplate({ invoice }: PDFTemplateProps): JSX.Element {
       <Text style={[styles.title, { color }]}>Milestone Invoice</Text>
       <Text style={styles.meta}>{invoice.invoiceNumber}</Text>
       <Text style={styles.meta}>
-        Issued {formatDate(invoice.issueDate)} • Due {formatDate(invoice.dueDate)}
+        Issued {formatDate(invoice.issueDate)} - Due {formatDate(invoice.dueDate)}
       </Text>
       <Text style={[styles.meta, { marginTop: 8 }]}>
         Bill To: {invoice.billToName} ({invoice.billToEmail})

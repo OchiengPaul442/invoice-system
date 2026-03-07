@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SUPPORTED_CURRENCIES } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -39,27 +40,51 @@ export function BusinessForm({
   onSaved?: () => void;
 }): JSX.Element {
   const [values, setValues] = useState<BusinessProfileValues>({
-    businessName: initialValues?.businessName || "",
-    businessAddress: initialValues?.businessAddress || "",
-    businessCity: initialValues?.businessCity || "",
-    businessState: initialValues?.businessState || "",
-    businessCountry: initialValues?.businessCountry || "Uganda",
-    businessZip: initialValues?.businessZip || "",
-    businessPhone: initialValues?.businessPhone || "",
-    businessEmail: initialValues?.businessEmail || "",
-    businessWebsite: initialValues?.businessWebsite || "",
-    taxId: initialValues?.taxId || "",
-    currency: initialValues?.currency || "UGX",
-    logoPath: initialValues?.logoPath || null,
-    primaryColor: initialValues?.primaryColor || "#2563EB",
-    accentColor: initialValues?.accentColor || "#0F172A",
-    bankName: initialValues?.bankName || "",
-    bankAccount: initialValues?.bankAccount || "",
-    bankBranch: initialValues?.bankBranch || "",
-    swiftCode: initialValues?.swiftCode || "",
-    paymentNotes: initialValues?.paymentNotes || "",
+    businessName: "",
+    businessAddress: "",
+    businessCity: "",
+    businessState: "",
+    businessCountry: "Uganda",
+    businessZip: "",
+    businessPhone: "",
+    businessEmail: "",
+    businessWebsite: "",
+    taxId: "",
+    currency: "UGX",
+    logoPath: null,
+    primaryColor: "#0F766E",
+    accentColor: "#1F2937",
+    bankName: "",
+    bankAccount: "",
+    bankBranch: "",
+    swiftCode: "",
+    paymentNotes: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setValues({
+      businessName: initialValues?.businessName || "",
+      businessAddress: initialValues?.businessAddress || "",
+      businessCity: initialValues?.businessCity || "",
+      businessState: initialValues?.businessState || "",
+      businessCountry: initialValues?.businessCountry || "Uganda",
+      businessZip: initialValues?.businessZip || "",
+      businessPhone: initialValues?.businessPhone || "",
+      businessEmail: initialValues?.businessEmail || "",
+      businessWebsite: initialValues?.businessWebsite || "",
+      taxId: initialValues?.taxId || "",
+      currency: initialValues?.currency || "UGX",
+      logoPath: initialValues?.logoPath || null,
+      primaryColor: initialValues?.primaryColor || "#0F766E",
+      accentColor: initialValues?.accentColor || "#1F2937",
+      bankName: initialValues?.bankName || "",
+      bankAccount: initialValues?.bankAccount || "",
+      bankBranch: initialValues?.bankBranch || "",
+      swiftCode: initialValues?.swiftCode || "",
+      paymentNotes: initialValues?.paymentNotes || "",
+    });
+  }, [initialValues]);
 
   const update =
     (key: keyof BusinessProfileValues) =>
@@ -151,17 +176,21 @@ export function BusinessForm({
         </div>
         <div className="space-y-1">
           <Label>Currency</Label>
-          <select
-            className="h-10 w-full rounded-md border border-surface-border bg-white px-3 text-sm"
+          <Select
             value={values.currency}
-            onChange={(event) => update("currency")(event.target.value)}
+            onValueChange={(value) => update("currency")(value)}
           >
-            {SUPPORTED_CURRENCIES.map((currency) => (
-              <option key={currency.code} value={currency.code}>
-                {currency.code}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SUPPORTED_CURRENCIES.map((currency) => (
+                <SelectItem key={currency.code} value={currency.code}>
+                  {currency.code} - {currency.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-1">
           <Label>Tax ID</Label>
@@ -183,6 +212,34 @@ export function BusinessForm({
             onChange={(event) => update("accentColor")(event.target.value)}
           />
         </div>
+        <div className="space-y-1">
+          <Label>Bank Name</Label>
+          <Input
+            value={values.bankName}
+            onChange={(event) => update("bankName")(event.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Bank Account</Label>
+          <Input
+            value={values.bankAccount}
+            onChange={(event) => update("bankAccount")(event.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Bank Branch</Label>
+          <Input
+            value={values.bankBranch}
+            onChange={(event) => update("bankBranch")(event.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>SWIFT Code</Label>
+          <Input
+            value={values.swiftCode}
+            onChange={(event) => update("swiftCode")(event.target.value)}
+          />
+        </div>
       </div>
       <div className="space-y-1">
         <Label>Payment Notes</Label>
@@ -191,7 +248,7 @@ export function BusinessForm({
           onChange={(event) => update("paymentNotes")(event.target.value)}
         />
       </div>
-      <Button disabled={isSaving} onClick={() => void save()} type="button">
+      <Button className="rounded-xl" disabled={isSaving} onClick={() => void save()} type="button">
         {isSaving ? "Saving..." : "Save Business Profile"}
       </Button>
     </div>

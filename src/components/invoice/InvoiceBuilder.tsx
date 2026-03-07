@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { addDays } from "date-fns";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useClients } from "@/hooks/useClients";
 import { usePDFDownload } from "@/hooks/usePDFDownload";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { InvoicePreview } from "@/components/invoice/InvoicePreview";
 import { LineItemsTable } from "@/components/invoice/LineItemsTable";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClientOption {
   id: string;
@@ -57,6 +58,7 @@ interface InvoiceBuilderProps {
 
 export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { downloadPDF } = usePDFDownload();
   const { clients } = useClients<ClientOption>("isActive=true");
   const [isSaving, setIsSaving] = useState(false);
@@ -68,12 +70,62 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
   const loadInvoice = useInvoiceBuilderStore((state) => state.loadInvoice);
   const reset = useInvoiceBuilderStore((state) => state.reset);
 
+  useEffect(() => () => reset(), [reset]);
+
   useEffect(() => {
-    if (!dueDate) {
-      setField("dueDate", addDays(new Date(), 30).toISOString().split("T")[0]);
-    }
-    return () => reset();
-  }, [dueDate, reset, setField]);
+    if (dueDate) return;
+    setField("dueDate", addDays(new Date(), 30).toISOString().split("T")[0]);
+  }, [dueDate, setField]);
+
+  useEffect(() => {
+    if (invoiceId) return;
+
+    const applyDefaults = async (): Promise<void> => {
+      try {
+        const response = await fetch("/api/settings", { cache: "no-store" });
+        const payload = (await response.json()) as {
+          success: boolean;
+          data?: {
+            invoiceSettings?: {
+              defaultTemplate?: TemplateType;
+              defaultPaymentTerms?: number;
+              defaultTaxRate?: number;
+              defaultTaxLabel?: string;
+              defaultCurrency?: string;
+              defaultFooter?: string | null;
+            } | null;
+          };
+        };
+
+        if (!response.ok || !payload.success || !payload.data?.invoiceSettings) return;
+
+        const defaults = payload.data.invoiceSettings;
+
+        if (defaults.defaultTemplate) {
+          setField("templateType", defaults.defaultTemplate);
+        }
+        if (defaults.defaultCurrency) {
+          setField("currency", defaults.defaultCurrency);
+        }
+        if (typeof defaults.defaultTaxRate === "number") {
+          setField("taxRate", defaults.defaultTaxRate);
+        }
+        if (defaults.defaultTaxLabel) {
+          setField("taxLabel", defaults.defaultTaxLabel);
+        }
+        if (defaults.defaultFooter) {
+          setField("footer", defaults.defaultFooter);
+        }
+        if (typeof defaults.defaultPaymentTerms === "number") {
+          setField("paymentTerms", `Net ${defaults.defaultPaymentTerms}`);
+        }
+      } catch (error) {
+        console.error("Load invoice defaults failed:", error);
+      }
+    };
+
+    void applyDefaults();
+  }, [invoiceId, setField]);
 
   useEffect(() => {
     if (!invoiceId) return;
@@ -148,8 +200,8 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
           footer: data.footer || "",
           paymentTerms: data.paymentTerms || "",
           paymentInstructions: data.paymentInstructions || "",
-          primaryColor: data.primaryColor || "#2563EB",
-          accentColor: data.accentColor || "#0F172A",
+          primaryColor: data.primaryColor || "#0F766E",
+          accentColor: data.accentColor || "#1F2937",
           showLogo: data.showLogo,
           billTo: {
             name: data.billToName,
@@ -182,8 +234,53 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
   );
 
   useEffect(() => {
+    if (invoiceId) return;
+
+    const queryClientId = searchParams.get("clientId");
+    if (queryClientId && queryClientId !== store.clientId) {
+      setField("clientId", queryClientId);
+    }
+
+    const queryTemplate = searchParams.get("template");
+    if (
+      queryTemplate &&
+      templateOptions.some((option) => option.value === queryTemplate) &&
+      store.templateType !== queryTemplate
+    ) {
+      setField("templateType", queryTemplate as TemplateType);
+    }
+
+    const queryPrimaryColor = searchParams.get("primaryColor");
+    if (
+      queryPrimaryColor &&
+      /^#[0-9A-Fa-f]{6}$/.test(queryPrimaryColor) &&
+      store.primaryColor !== queryPrimaryColor
+    ) {
+      setField("primaryColor", queryPrimaryColor);
+    }
+
+    const queryAccentColor = searchParams.get("accentColor");
+    if (
+      queryAccentColor &&
+      /^#[0-9A-Fa-f]{6}$/.test(queryAccentColor) &&
+      store.accentColor !== queryAccentColor
+    ) {
+      setField("accentColor", queryAccentColor);
+    }
+  }, [
+    invoiceId,
+    searchParams,
+    setField,
+    store.clientId,
+    store.templateType,
+    store.primaryColor,
+    store.accentColor,
+  ]);
+
+  useEffect(() => {
     if (!selectedClient) return;
-    setField("billTo", {
+
+    const nextBillTo = {
       name: selectedClient.name,
       email: selectedClient.email,
       company: selectedClient.company ?? "",
@@ -191,8 +288,21 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
       city: selectedClient.city ?? "",
       country: selectedClient.country ?? "",
       taxId: selectedClient.taxId ?? "",
-    });
-  }, [selectedClient, setField]);
+    };
+
+    const isSameBillTo =
+      store.billTo.name === nextBillTo.name &&
+      store.billTo.email === nextBillTo.email &&
+      (store.billTo.company || "") === nextBillTo.company &&
+      (store.billTo.address || "") === nextBillTo.address &&
+      (store.billTo.city || "") === nextBillTo.city &&
+      (store.billTo.country || "") === nextBillTo.country &&
+      (store.billTo.taxId || "") === nextBillTo.taxId;
+
+    if (!isSameBillTo) {
+      setField("billTo", nextBillTo);
+    }
+  }, [selectedClient, setField, store.billTo]);
 
   const payload = useMemo(
     () => ({
@@ -274,9 +384,13 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
 
   if (isLoadingInvoice) {
     return (
-      <div className="rounded-md border border-surface-border bg-white p-6 text-sm text-ink-muted">
-        Loading invoice...
-      </div>
+      <Card>
+        <CardContent className="space-y-3 pt-6">
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </CardContent>
+      </Card>
     );
   }
 

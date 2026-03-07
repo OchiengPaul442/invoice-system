@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
 });
 
 export function RetainerTemplate({ invoice }: PDFTemplateProps): JSX.Element {
-  const color = invoice.primaryColor || "#1d4ed8";
+  const color = invoice.primaryColor || "#0f766e";
   const lineItems = toLineItems(invoice.lineItems);
 
   const periodStart = invoice.servicePeriodStart

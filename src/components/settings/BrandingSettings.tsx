@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 
@@ -26,16 +27,29 @@ export function BrandingSettings({
   onSaved?: () => void;
 }): JSX.Element {
   const [values, setValues] = useState<InvoiceDefaultsValues>({
-    defaultTemplate: initialValues?.defaultTemplate || "CLASSIC",
-    defaultPaymentTerms: initialValues?.defaultPaymentTerms || 30,
-    defaultTaxRate: initialValues?.defaultTaxRate || 0,
-    defaultTaxLabel: initialValues?.defaultTaxLabel || "VAT",
-    defaultCurrency: initialValues?.defaultCurrency || "UGX",
-    invoicePrefix: initialValues?.invoicePrefix || "INV",
-    defaultFooter: initialValues?.defaultFooter || "",
-    sendCopyToSelf: initialValues?.sendCopyToSelf || false,
+    defaultTemplate: "CLASSIC",
+    defaultPaymentTerms: 30,
+    defaultTaxRate: 0,
+    defaultTaxLabel: "VAT",
+    defaultCurrency: "UGX",
+    invoicePrefix: "INV",
+    defaultFooter: "",
+    sendCopyToSelf: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setValues({
+      defaultTemplate: initialValues?.defaultTemplate || "CLASSIC",
+      defaultPaymentTerms: initialValues?.defaultPaymentTerms || 30,
+      defaultTaxRate: initialValues?.defaultTaxRate || 0,
+      defaultTaxLabel: initialValues?.defaultTaxLabel || "VAT",
+      defaultCurrency: initialValues?.defaultCurrency || "UGX",
+      invoicePrefix: initialValues?.invoicePrefix || "INV",
+      defaultFooter: initialValues?.defaultFooter || "",
+      sendCopyToSelf: initialValues?.sendCopyToSelf || false,
+    });
+  }, [initialValues]);
 
   const save = async (): Promise<void> => {
     setIsSaving(true);
@@ -68,22 +82,26 @@ export function BrandingSettings({
       <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-1">
           <Label>Default Template</Label>
-          <select
-            className="h-10 w-full rounded-md border border-surface-border bg-white px-3 text-sm"
+          <Select
             value={values.defaultTemplate}
-            onChange={(event) =>
+            onValueChange={(value) =>
               setValues((current) => ({
                 ...current,
-                defaultTemplate: event.target.value as InvoiceDefaultsValues["defaultTemplate"],
+                defaultTemplate: value as InvoiceDefaultsValues["defaultTemplate"],
               }))
             }
           >
-            <option value="CLASSIC">CLASSIC</option>
-            <option value="MODERN">MODERN</option>
-            <option value="MINIMAL">MINIMAL</option>
-            <option value="MILESTONE">MILESTONE</option>
-            <option value="RETAINER">RETAINER</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CLASSIC">Classic</SelectItem>
+              <SelectItem value="MODERN">Modern</SelectItem>
+              <SelectItem value="MINIMAL">Minimal</SelectItem>
+              <SelectItem value="MILESTONE">Milestone</SelectItem>
+              <SelectItem value="RETAINER">Retainer</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-1">
           <Label>Invoice Prefix</Label>
@@ -162,7 +180,7 @@ export function BrandingSettings({
         />
         Send copy to self by default
       </label>
-      <Button disabled={isSaving} onClick={() => void save()} type="button">
+      <Button className="rounded-xl" disabled={isSaving} onClick={() => void save()} type="button">
         {isSaving ? "Saving..." : "Save Invoice Defaults"}
       </Button>
     </div>

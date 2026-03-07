@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Manrope, Sora } from "next/font/google";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
-const inter = Inter({
+const manrope = Manrope({
   subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-display",
 });
 
 export const metadata: Metadata = {
-  title: "Invoice-App",
-  description: "Professional invoicing for developers",
+  title: "InvoiceFlow",
+  description: "Mobile-first invoice management for modern teams",
 };
 
 export default function RootLayout({
@@ -20,7 +26,7 @@ export default function RootLayout({
 }>): JSX.Element {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${manrope.variable} ${sora.variable} antialiased`}>
         <SessionProvider>
           {children}
           <Toaster />

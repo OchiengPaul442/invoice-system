@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
 });
 
 export function ModernTemplate({ invoice, profile }: PDFTemplateProps): JSX.Element {
-  const color = invoice.primaryColor || "#3b82f6";
+  const color = invoice.primaryColor || "#0f766e";
   const lineItems = toLineItems(invoice.lineItems);
 
   return (
@@ -56,7 +56,7 @@ export function ModernTemplate({ invoice, profile }: PDFTemplateProps): JSX.Elem
           <Text style={[styles.invoiceTitle, { color }]}>INVOICE</Text>
           <Text style={{ marginTop: 4 }}>{invoice.invoiceNumber}</Text>
           <Text style={{ marginTop: 2, fontSize: 9, color: "#64748b" }}>
-            Issued {formatDate(invoice.issueDate)} • Due {formatDate(invoice.dueDate)}
+            Issued {formatDate(invoice.issueDate)} - Due {formatDate(invoice.dueDate)}
           </Text>
           {invoice.projectName ? <Text style={{ marginTop: 8 }}>{invoice.projectName}</Text> : null}
 

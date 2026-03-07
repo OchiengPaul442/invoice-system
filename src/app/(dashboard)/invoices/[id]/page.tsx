@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Download, Pencil, Send, Trash2 } from "lucide-react";
+import { Download, Mail, Pencil, Send, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { usePDFDownload } from "@/hooks/usePDFDownload";
 import { toast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -59,6 +60,7 @@ export default function InvoiceDetailPage(): JSX.Element {
   const { downloadPDF } = usePDFDownload();
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const loadInvoice = useCallback(async (): Promise<void> => {
     try {
@@ -115,6 +117,9 @@ export default function InvoiceDetailPage(): JSX.Element {
 
   const deleteInvoice = async (): Promise<void> => {
     if (!invoice) return;
+    if (!window.confirm("Delete this draft invoice? This action cannot be undone.")) {
+      return;
+    }
     try {
       const response = await fetch(`/api/invoices/${invoice.id}`, { method: "DELETE" });
       const payload = (await response.json()) as { success: boolean; error?: string };
@@ -134,8 +139,41 @@ export default function InvoiceDetailPage(): JSX.Element {
     }
   };
 
+  const sendInvoiceEmail = async (): Promise<void> => {
+    if (!invoice) return;
+    try {
+      setIsSendingEmail(true);
+      const response = await fetch(`/api/invoices/${invoice.id}/send`, {
+        method: "POST",
+      });
+      const payload = (await response.json()) as { success: boolean; error?: string };
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Failed to send invoice email");
+      }
+      toast({ title: "Invoice emailed", description: `Sent to ${invoice.billToEmail}` });
+      await loadInvoice();
+    } catch (error) {
+      console.error("Send invoice email failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Email failed",
+        description: error instanceof Error ? error.message : "Unable to send email",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   if (isLoading) {
-    return <div className="text-sm text-ink-muted">Loading invoice...</div>;
+    return (
+      <Card>
+        <CardContent className="space-y-3 pt-6">
+          <Skeleton className="h-7 w-44" />
+          <Skeleton className="h-4 w-60" />
+          <Skeleton className="h-72 w-full" />
+        </CardContent>
+      </Card>
+    );
   }
 
   if (!invoice) {
@@ -171,6 +209,14 @@ export default function InvoiceDetailPage(): JSX.Element {
           <Button variant="outline" onClick={() => void updateStatus("SENT")}>
             <Send className="mr-2 h-4 w-4" />
             Mark Sent
+          </Button>
+          <Button
+            disabled={isSendingEmail}
+            variant="outline"
+            onClick={() => void sendInvoiceEmail()}
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            {isSendingEmail ? "Sending..." : "Email Invoice"}
           </Button>
           <Button onClick={() => void updateStatus("PAID")}>Mark Paid</Button>
           <Button variant="destructive" onClick={() => void deleteInvoice()}>

@@ -21,12 +21,19 @@ export async function GET(): Promise<NextResponse> {
       prisma.invoiceSettings.findUnique({ where: { userId: session.user.id } }),
     ]);
 
+    const normalizedInvoiceSettings = invoiceSettings
+      ? {
+          ...invoiceSettings,
+          defaultTaxRate: Number(invoiceSettings.defaultTaxRate),
+        }
+      : null;
+
     return NextResponse.json({
       success: true,
       data: {
         user,
         profile,
-        invoiceSettings,
+        invoiceSettings: normalizedInvoiceSettings,
       },
     });
   } catch (error) {

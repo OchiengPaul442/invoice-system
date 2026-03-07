@@ -6,33 +6,32 @@ export async function generateInvoiceNumber(userId: string): Promise<string> {
   const result = await prisma.$transaction(async (tx) => {
     const currentSettings = await tx.invoiceSettings.findUnique({
       where: { userId },
-      select: { currentYear: true },
+      select: { id: true, currentYear: true, currentSequence: true, invoicePrefix: true },
     });
 
-    const settings = await tx.invoiceSettings.upsert({
-      where: { userId },
-      update: {
-        currentSequence: {
-          increment: currentYear === currentSettings?.currentYear ? 1 : 1,
+    if (!currentSettings) {
+      return tx.invoiceSettings.create({
+        data: {
+          userId,
+          currentSequence: 1,
+          currentYear,
         },
-        currentYear,
-      },
-      create: {
-        userId,
-        currentSequence: 1,
-        currentYear,
-      },
-    });
+      });
+    }
 
-    if (settings.currentYear !== currentYear) {
-      const reset = await tx.invoiceSettings.update({
+    if (currentSettings.currentYear !== currentYear) {
+      return tx.invoiceSettings.update({
         where: { userId },
         data: { currentSequence: 1, currentYear },
       });
-      return reset;
     }
 
-    return settings;
+    return tx.invoiceSettings.update({
+      where: { userId },
+      data: {
+        currentSequence: { increment: 1 },
+      },
+    });
   });
 
   const prefix = result.invoicePrefix || "INV";

@@ -16,11 +16,11 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface-muted">
+    <div className="flex min-h-screen bg-surface-muted">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
-        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 pb-28 md:p-6 md:pb-6">{children}</main>
       </div>
       <MobileNav />
     </div>
