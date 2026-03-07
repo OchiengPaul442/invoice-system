@@ -75,19 +75,51 @@ EMAIL_FROM="InvoiceFlow <noreply@your-domain.com>"
 
 ## Email Sending (Free Provider)
 
-Invoice email sending uses Resend API (`/api/invoices/[id]/send`).
+Invoice email sending (`/api/invoices/[id]/send`) now supports:
 
-1. Create a free Resend account.
-2. Verify your sender domain.
-3. Add SPF, DKIM, and DMARC DNS records for deliverability.
-4. Set:
-   - `RESEND_API_KEY`
-   - `EMAIL_FROM` (must match verified domain)
+- `RESEND_API_KEY` (Resend free tier), or
+- SMTP via Nodemailer (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`) for providers like Zoho/Mailgun/Gmail SMTP.
+
+You only need one provider path configured.
+
+### If using Resend
+
+1. Create a free account at Resend.
+2. Generate API key from dashboard.
+3. Verify sender domain.
+4. Set `RESEND_API_KEY` and `EMAIL_FROM`.
+
+### If using SMTP (Nodemailer)
+
+1. Use your SMTP credentials from your mail provider.
+2. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`.
+3. Set `EMAIL_FROM`.
 
 Deliverability notes:
 - Use a verified domain, not shared/testing sender.
 - Keep subject/body consistent and invoice-focused.
 - Avoid spammy wording and excessive links.
+
+## Cloudinary Invoice PDF Storage
+
+On invoice create/update, PDF snapshots are generated and uploaded to Cloudinary (raw files) when Cloudinary env vars are set.
+
+Required vars:
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `CLOUDINARY_FOLDER` (optional, defaults to `invoiceflow/invoices`)
+
+Database fields used:
+- `Invoice.pdfUrl`
+- `Invoice.pdfPublicId`
+
+After schema changes, run:
+
+```bash
+pnpm db:generate
+pnpm exec prisma db push
+```
 
 ## Template Workflow
 

@@ -115,12 +115,16 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Send invoice email failed:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to send invoice email";
+    const isConfigError = message.includes("Missing");
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to send invoice email",
+        error: message,
       },
-      { status: 500 },
+      { status: isConfigError ? 400 : 500 },
     );
   }
 }

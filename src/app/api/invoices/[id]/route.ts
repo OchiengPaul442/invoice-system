@@ -2,6 +2,8 @@ import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { calculateInvoiceTotals } from "@/lib/calculations";
+import { deleteCloudinaryAsset } from "@/lib/cloudinary";
+import { syncInvoicePdfToCloudinary } from "@/lib/invoice-pdf";
 import { prisma } from "@/lib/prisma";
 import { invoiceUpdateSchema } from "@/schemas/invoice.schema";
 import { LineItem } from "@/types/invoice";
@@ -197,6 +199,12 @@ export async function PUT(
       },
     });
 
+    try {
+      await syncInvoicePdfToCloudinary(invoice.id, session.user.id);
+    } catch (error) {
+      console.error("Cloudinary sync after update failed:", error);
+    }
+
     return NextResponse.json({ success: true, data: { id: invoice.id } });
   } catch (error) {
     console.error("Update invoice failed:", error);
@@ -222,7 +230,7 @@ export async function DELETE(
   try {
     const existing = await prisma.invoice.findFirst({
       where: { id: params.id, userId: session.user.id },
-      select: { id: true, status: true },
+      select: { id: true, status: true, pdfPublicId: true },
     });
 
     if (!existing) {
@@ -242,6 +250,12 @@ export async function DELETE(
     await prisma.invoice.delete({
       where: { id: params.id },
     });
+
+    try {
+      await deleteCloudinaryAsset(existing.pdfPublicId);
+    } catch (error) {
+      console.error("Cloudinary asset delete failed:", error);
+    }
 
     return NextResponse.json({ success: true, data: { deleted: true } });
   } catch (error) {

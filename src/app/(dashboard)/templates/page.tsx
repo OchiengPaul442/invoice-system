@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Paintbrush, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, Paintbrush, Plus, Table, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -23,6 +23,23 @@ interface TemplateCard {
   origin: string;
 }
 
+interface CanvasSectionBlock {
+  id: string;
+  kind: "section";
+  section: "header" | "billTo" | "project" | "lineItems" | "totals" | "notes";
+  enabled: boolean;
+}
+
+interface CanvasTableBlock {
+  id: string;
+  kind: "table";
+  title: string;
+  columns: string[];
+  enabled: boolean;
+}
+
+type CanvasBlock = CanvasSectionBlock | CanvasTableBlock;
+
 interface CustomPreset {
   id: string;
   name: string;
@@ -30,6 +47,7 @@ interface CustomPreset {
   templateType: TemplateType;
   primaryColor: string;
   accentColor: string;
+  layout: CanvasBlock[];
 }
 
 interface SettingsResponse {
@@ -81,12 +99,31 @@ const templates: TemplateCard[] = [
   },
 ];
 
+const defaultCanvasLayout: CanvasBlock[] = [
+  { id: "header", kind: "section", section: "header", enabled: true },
+  { id: "billTo", kind: "section", section: "billTo", enabled: true },
+  { id: "project", kind: "section", section: "project", enabled: true },
+  { id: "lineItems", kind: "section", section: "lineItems", enabled: true },
+  { id: "totals", kind: "section", section: "totals", enabled: true },
+  { id: "notes", kind: "section", section: "notes", enabled: true },
+];
+
+const sectionLabelMap: Record<CanvasSectionBlock["section"], string> = {
+  header: "Header",
+  billTo: "Bill To",
+  project: "Project",
+  lineItems: "Line Items",
+  totals: "Totals",
+  notes: "Notes",
+};
+
 const emptyPreset: Omit<CustomPreset, "id"> = {
   name: "",
   description: "",
   templateType: "MODERN",
   primaryColor: "#0F766E",
   accentColor: "#1F2937",
+  layout: defaultCanvasLayout,
 };
 
 export default function TemplatesPage(): JSX.Element {
@@ -96,13 +133,21 @@ export default function TemplatesPage(): JSX.Element {
   const [defaultTemplate, setDefaultTemplate] = useState<TemplateType | null>(null);
   const [customTemplates, setCustomTemplates] = useState<CustomPreset[]>([]);
   const [draftPreset, setDraftPreset] = useState<Omit<CustomPreset, "id">>(emptyPreset);
+  const [newTableTitle, setNewTableTitle] = useState("");
+  const [newTableColumns, setNewTableColumns] = useState("Item, Details, Amount");
 
   useEffect(() => {
     const raw = window.localStorage.getItem(CUSTOM_PRESET_STORAGE_KEY);
     if (!raw) return;
+
     try {
-      const parsed = JSON.parse(raw) as CustomPreset[];
-      setCustomTemplates(parsed);
+      const parsed = JSON.parse(raw) as Array<CustomPreset & { layout?: CanvasBlock[] }>;
+      setCustomTemplates(
+        parsed.map((template) => ({
+          ...template,
+          layout: template.layout?.length ? template.layout : defaultCanvasLayout,
+        })),
+      );
     } catch (error) {
       console.error("Read custom template presets failed:", error);
     }
@@ -156,6 +201,64 @@ export default function TemplatesPage(): JSX.Element {
     } finally {
       setIsSaving(null);
     }
+  };
+
+  const moveLayoutBlock = (index: number, direction: -1 | 1): void => {
+    setDraftPreset((current) => {
+      const next = [...current.layout];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= next.length) return current;
+      const [moved] = next.splice(index, 1);
+      next.splice(targetIndex, 0, moved);
+      return { ...current, layout: next };
+    });
+  };
+
+  const toggleLayoutBlock = (id: string): void => {
+    setDraftPreset((current) => ({
+      ...current,
+      layout: current.layout.map((block) =>
+        block.id === id ? { ...block, enabled: !block.enabled } : block,
+      ),
+    }));
+  };
+
+  const removeTableBlock = (id: string): void => {
+    setDraftPreset((current) => ({
+      ...current,
+      layout: current.layout.filter((block) => block.id !== id),
+    }));
+  };
+
+  const addTableBlock = (): void => {
+    const columns = newTableColumns
+      .split(",")
+      .map((column) => column.trim())
+      .filter(Boolean);
+
+    if (!newTableTitle.trim() || !columns.length) {
+      toast({
+        variant: "destructive",
+        title: "Table details required",
+        description: "Provide a table title and at least one column.",
+      });
+      return;
+    }
+
+    const block: CanvasTableBlock = {
+      id: crypto.randomUUID(),
+      kind: "table",
+      title: newTableTitle.trim(),
+      columns,
+      enabled: true,
+    };
+
+    setDraftPreset((current) => ({
+      ...current,
+      layout: [...current.layout, block],
+    }));
+    setNewTableTitle("");
+    setNewTableColumns("Item, Details, Amount");
   };
 
   const createCustomTemplate = (): void => {
@@ -225,12 +328,17 @@ export default function TemplatesPage(): JSX.Element {
     }
   };
 
-  const openTemplate = (template: Pick<CustomPreset, "templateType" | "primaryColor" | "accentColor">): void => {
+  const openTemplate = (template: Pick<CustomPreset, "templateType" | "primaryColor" | "accentColor" | "layout">): void => {
     const params = new URLSearchParams({
       template: template.templateType,
       primaryColor: template.primaryColor,
       accentColor: template.accentColor,
     });
+
+    if (template.layout.length) {
+      params.set("layout", btoa(JSON.stringify(template.layout)));
+    }
+
     router.push(`/invoices/new?${params.toString()}`);
   };
 
@@ -304,6 +412,7 @@ export default function TemplatesPage(): JSX.Element {
                         templateType: template.key,
                         primaryColor: "#0F766E",
                         accentColor: "#1F2937",
+                        layout: defaultCanvasLayout,
                       })
                     }
                     size="sm"
@@ -344,7 +453,7 @@ export default function TemplatesPage(): JSX.Element {
             Custom Template Studio
           </CardTitle>
           <CardDescription>
-            Design your own professional look by combining a base structure with your brand colors.
+            Build your own invoice canvas: reorder sections, toggle visibility, and add custom table blocks.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -410,6 +519,61 @@ export default function TemplatesPage(): JSX.Element {
               />
             </div>
           </div>
+
+          <div className="rounded-xl border border-surface-border p-3">
+            <p className="text-sm font-semibold text-ink">Canvas Blocks</p>
+            <p className="text-xs text-ink-muted">Move blocks up/down and hide/show them.</p>
+            <div className="mt-3 space-y-2">
+              {draftPreset.layout.map((block, index) => (
+                <div key={block.id} className="flex items-center justify-between rounded-lg border border-surface-border px-3 py-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    {block.kind === "section" ? (
+                      <span>{sectionLabelMap[block.section]}</span>
+                    ) : (
+                      <>
+                        <Table className="h-4 w-4 text-brand-700" />
+                        <span>{block.title}</span>
+                      </>
+                    )}
+                    {!block.enabled ? <span className="text-xs text-ink-muted">(hidden)</span> : null}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button onClick={() => moveLayoutBlock(index, -1)} size="icon" type="button" variant="ghost">
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button onClick={() => moveLayoutBlock(index, 1)} size="icon" type="button" variant="ghost">
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <Button onClick={() => toggleLayoutBlock(block.id)} size="icon" type="button" variant="ghost">
+                      {block.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    </Button>
+                    {block.kind === "table" ? (
+                      <Button onClick={() => removeTableBlock(block.id)} size="icon" type="button" variant="ghost">
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+              <Input
+                placeholder="Table title (e.g. Deliverables)"
+                value={newTableTitle}
+                onChange={(event) => setNewTableTitle(event.target.value)}
+              />
+              <Input
+                placeholder="Columns separated by comma"
+                value={newTableColumns}
+                onChange={(event) => setNewTableColumns(event.target.value)}
+              />
+              <Button className="rounded-xl" onClick={addTableBlock} type="button" variant="outline">
+                <Plus className="h-4 w-4" />
+                Add Table
+              </Button>
+            </div>
+          </div>
+
           <Button className="rounded-xl" onClick={createCustomTemplate} type="button">
             <Plus className="h-4 w-4" />
             Save Custom Template
@@ -436,6 +600,7 @@ export default function TemplatesPage(): JSX.Element {
                   {template.accentColor}
                 </span>
               </div>
+              <p className="text-xs text-ink-muted">{template.layout.length} canvas blocks configured</p>
             </CardContent>
             <CardFooter className="gap-2">
               <Button className="rounded-xl" onClick={() => openTemplate(template)} size="sm">

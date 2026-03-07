@@ -13,7 +13,17 @@ export function usePDFDownload(): {
         throw new Error("PDF generation failed");
       }
 
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/pdf")) {
+        const errorBody = await response.text();
+        throw new Error(errorBody || "Unexpected file response");
+      }
+
       const blob = await response.blob();
+      if (!blob.size) {
+        throw new Error("Generated PDF is empty");
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

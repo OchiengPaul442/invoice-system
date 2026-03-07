@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { calculateInvoiceTotals } from "@/lib/calculations";
+import { syncInvoicePdfToCloudinary } from "@/lib/invoice-pdf";
 import { generateInvoiceNumber } from "@/lib/invoice-number";
 import { prisma } from "@/lib/prisma";
 import { invoiceCreateSchema } from "@/schemas/invoice.schema";
@@ -182,6 +183,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         action: "created",
       },
     });
+
+    try {
+      await syncInvoicePdfToCloudinary(invoice.id, session.user.id);
+    } catch (error) {
+      console.error("Cloudinary sync after create failed:", error);
+    }
 
     return NextResponse.json(
       {

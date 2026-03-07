@@ -37,6 +37,7 @@ interface InvoiceDetail {
   taxAmount: number;
   total: number;
   balanceDue: number;
+  pdfUrl?: string | null;
   notes?: string | null;
   footer?: string | null;
   payments: Array<{
@@ -206,6 +207,13 @@ export default function InvoiceDetailPage(): JSX.Element {
             <Download className="mr-2 h-4 w-4" />
             Download PDF
           </Button>
+          {invoice.pdfUrl ? (
+            <Button asChild variant="outline">
+              <a href={invoice.pdfUrl} rel="noreferrer" target="_blank">
+                Open Cloud Copy
+              </a>
+            </Button>
+          ) : null}
           <Button variant="outline" onClick={() => void updateStatus("SENT")}>
             <Send className="mr-2 h-4 w-4" />
             Mark Sent

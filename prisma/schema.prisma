@@ -172,6 +172,8 @@ model Invoice {
   footer              String?
   paymentTerms        String?
   paymentInstructions String?
+  pdfUrl              String?
+  pdfPublicId         String?
   viewedAt            DateTime?
   paidAt              DateTime?
   sentAt              DateTime?

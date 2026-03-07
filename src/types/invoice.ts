@@ -89,6 +89,8 @@ export interface Invoice {
   footer?: string;
   paymentTerms?: string;
   paymentInstructions?: string;
+  pdfUrl?: string | null;
+  pdfPublicId?: string | null;
   projectName?: string;
   projectDescription?: string;
   createdAt: string;

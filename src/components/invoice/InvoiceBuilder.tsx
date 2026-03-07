@@ -200,6 +200,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
           footer: data.footer || "",
           paymentTerms: data.paymentTerms || "",
           paymentInstructions: data.paymentInstructions || "",
+          layoutConfig: "",
           primaryColor: data.primaryColor || "#0F766E",
           accentColor: data.accentColor || "#1F2937",
           showLogo: data.showLogo,
@@ -267,6 +268,18 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
     ) {
       setField("accentColor", queryAccentColor);
     }
+
+    const queryLayout = searchParams.get("layout");
+    if (queryLayout) {
+      try {
+        const decoded = atob(queryLayout);
+        if (decoded && store.layoutConfig !== decoded) {
+          setField("layoutConfig", decoded);
+        }
+      } catch (error) {
+        console.error("Decode template layout failed:", error);
+      }
+    }
   }, [
     invoiceId,
     searchParams,
@@ -275,6 +288,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
     store.templateType,
     store.primaryColor,
     store.accentColor,
+    store.layoutConfig,
   ]);
 
   useEffect(() => {
@@ -333,6 +347,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
       footer: store.footer || undefined,
       paymentTerms: store.paymentTerms || undefined,
       paymentInstructions: store.paymentInstructions || undefined,
+      layoutConfig: store.layoutConfig || undefined,
       primaryColor: store.primaryColor,
       accentColor: store.accentColor,
       showLogo: store.showLogo,

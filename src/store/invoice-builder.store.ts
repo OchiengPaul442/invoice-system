@@ -25,6 +25,7 @@ interface InvoiceBuilderState {
   footer: string;
   paymentTerms: string;
   paymentInstructions: string;
+  layoutConfig: string;
   primaryColor: string;
   accentColor: string;
   showLogo: boolean;
@@ -126,6 +127,7 @@ const initialState: Omit<
   footer: "Thank you for your business.",
   paymentTerms: "Net 30",
   paymentInstructions: "",
+  layoutConfig: "",
   primaryColor: "#0F766E",
   accentColor: "#1F2937",
   showLogo: true,

@@ -1,10 +1,6 @@
-import React from "react";
-import { renderToBuffer } from "@react-pdf/renderer";
 import { NextRequest, NextResponse } from "next/server";
-import { PDFDocument } from "@/components/pdf/PDFDocument";
-import { toLineItems, toMilestones } from "@/components/pdf/shared/helpers";
-import { PDFInvoice } from "@/components/pdf/shared/types";
 import { auth } from "@/lib/auth";
+import { generateInvoicePdfBuffer } from "@/lib/invoice-pdf";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -19,44 +15,35 @@ export async function GET(
   try {
     const invoice = await prisma.invoice.findFirst({
       where: { id: params.id, userId: session.user.id },
+      select: { id: true, invoiceNumber: true, pdfUrl: true },
     });
 
     if (!invoice) {
       return new NextResponse("Not Found", { status: 404 });
     }
 
-    const profile = await prisma.userProfile.findUnique({
-      where: { userId: session.user.id },
-    });
+    if (invoice.pdfUrl) {
+      const cloudinaryResponse = await fetch(invoice.pdfUrl, { cache: "no-store" });
+      if (cloudinaryResponse.ok) {
+        const bytes = await cloudinaryResponse.arrayBuffer();
+        return new NextResponse(bytes, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="${invoice.invoiceNumber}.pdf"`,
+          },
+        });
+      }
+    }
 
-    const normalizedInvoice: PDFInvoice = {
-      ...invoice,
-      issueDate: invoice.issueDate.toISOString(),
-      dueDate: invoice.dueDate.toISOString(),
-      servicePeriodStart: invoice.servicePeriodStart?.toISOString() || null,
-      servicePeriodEnd: invoice.servicePeriodEnd?.toISOString() || null,
-      lineItems: toLineItems(invoice.lineItems),
-      milestones: toMilestones(invoice.milestones),
-      subtotal: Number(invoice.subtotal),
-      discountAmount: Number(invoice.discountAmount || 0),
-      taxRate: Number(invoice.taxRate),
-      taxAmount: Number(invoice.taxAmount),
-      total: Number(invoice.total),
-    };
+    const { buffer, invoiceNumber } = await generateInvoicePdfBuffer(invoice.id, session.user.id);
+    const bytes = new Uint8Array(buffer);
 
-    const document = React.createElement(PDFDocument, {
-      invoice: normalizedInvoice,
-      profile,
-    });
-
-    const pdfBuffer = await renderToBuffer(document as React.ReactElement);
-
-    return new NextResponse(new Uint8Array(pdfBuffer), {
+    return new NextResponse(bytes, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${invoice.invoiceNumber}.pdf"`,
-        "Content-Length": pdfBuffer.length.toString(),
+        "Content-Disposition": `attachment; filename="${invoiceNumber}.pdf"`,
       },
     });
   } catch (error) {

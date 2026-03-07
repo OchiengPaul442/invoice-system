@@ -54,7 +54,7 @@ export function Sidebar(): JSX.Element {
   };
 
   return (
-    <aside className="hidden h-screen w-72 flex-col border-r border-surface-border bg-white/90 backdrop-blur md:flex">
+    <aside className="sticky top-0 hidden h-[100dvh] w-72 shrink-0 flex-col border-r border-surface-border bg-white/90 backdrop-blur md:flex">
       <div className="border-b border-surface-border px-6 py-5">
         <Link href="/" className="inline-flex items-center gap-3">
           <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">

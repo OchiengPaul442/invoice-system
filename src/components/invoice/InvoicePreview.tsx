@@ -4,6 +4,34 @@ import { useMemo } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useInvoiceBuilderStore } from "@/store/invoice-builder.store";
 
+interface CanvasSectionBlock {
+  id: string;
+  kind: "section";
+  section: "header" | "billTo" | "project" | "lineItems" | "totals" | "notes";
+  enabled: boolean;
+}
+
+interface CanvasTableBlock {
+  id: string;
+  kind: "table";
+  title: string;
+  columns: string[];
+  enabled: boolean;
+}
+
+type CanvasBlock = CanvasSectionBlock | CanvasTableBlock;
+
+function parseLayoutConfig(raw: string): CanvasBlock[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as CanvasBlock[];
+    if (!Array.isArray(parsed) || !parsed.length) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function TotalsSummary({
   subtotal,
   discountAmount,
@@ -81,6 +109,10 @@ function SharedLineItems(): JSX.Element {
 
 export function InvoicePreview(): JSX.Element {
   const store = useInvoiceBuilderStore();
+  const canvasBlocks = useMemo(
+    () => parseLayoutConfig(store.layoutConfig),
+    [store.layoutConfig],
+  );
 
   const totals = useMemo(
     () => ({
@@ -94,6 +126,75 @@ export function InvoicePreview(): JSX.Element {
 
   const color = store.primaryColor || "#0F766E";
   const accent = store.accentColor || "#1F2937";
+  const headerSection = (
+    <header className="flex items-start justify-between border-b pb-4">
+      <div>
+        <h2 className="text-xl font-bold" style={{ color }}>
+          INVOICE
+        </h2>
+        <p className="mt-2 text-xs text-ink-muted">{store.invoiceNumber || "Pending Number"}</p>
+      </div>
+      <div className="text-right text-xs">
+        <p className="text-ink-muted">Issued</p>
+        <p className="font-medium text-ink">{store.issueDate ? formatDate(store.issueDate) : "-"}</p>
+        <p className="mt-2 text-ink-muted">Due</p>
+        <p className="font-medium text-ink">{store.dueDate ? formatDate(store.dueDate) : "-"}</p>
+      </div>
+    </header>
+  );
+
+  const billToSection = (
+    <section>
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Bill To</p>
+      <p className="mt-2 font-semibold text-ink">{store.billTo.name || "Client Name"}</p>
+      <p className="text-xs text-ink-muted">{store.billTo.email || "client@email.com"}</p>
+      {store.billTo.company ? <p className="text-xs text-ink-muted">{store.billTo.company}</p> : null}
+      {store.billTo.address ? <p className="text-xs text-ink-muted">{store.billTo.address}</p> : null}
+      {store.billTo.city ? (
+        <p className="text-xs text-ink-muted">
+          {store.billTo.city}
+          {store.billTo.country ? `, ${store.billTo.country}` : ""}
+        </p>
+      ) : null}
+    </section>
+  );
+
+  const projectSection = (
+    <section>
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Project</p>
+      <p className="mt-2 font-semibold text-ink">{store.projectName || "Project Name"}</p>
+      <p className="text-xs text-ink-muted">
+        {store.projectDescription || "Project description will appear here."}
+      </p>
+    </section>
+  );
+
+  const totalsSection = (
+    <section className="mt-6 flex justify-end">
+      <TotalsSummary
+        color={color}
+        currency={store.currency}
+        discountAmount={totals.discountAmount}
+        subtotal={totals.subtotal}
+        taxAmount={totals.taxAmount}
+        taxLabel={store.taxLabel}
+        taxRate={store.taxRate}
+        total={totals.total}
+      />
+    </section>
+  );
+
+  const notesSection = (
+    <section className="mt-8 space-y-3 border-t pt-4 text-xs">
+      {store.notes ? (
+        <div>
+          <p className="font-semibold text-ink">Notes</p>
+          <p className="text-ink-muted">{store.notes}</p>
+        </div>
+      ) : null}
+      {store.footer ? <p className="text-center text-ink-subtle">{store.footer}</p> : null}
+    </section>
+  );
 
   return (
     <div className="h-full w-full overflow-auto rounded-xl border border-surface-border bg-gradient-to-br from-[#f4fbf8] via-white to-[#fff6ea] p-3 sm:p-4">
@@ -271,74 +372,68 @@ export function InvoicePreview(): JSX.Element {
 
         {store.templateType === "CLASSIC" ? (
           <div>
-            <header className="flex items-start justify-between border-b pb-4">
+            {canvasBlocks ? (
               <div>
-                <h2 className="text-xl font-bold" style={{ color }}>
-                  INVOICE
-                </h2>
-                <p className="mt-2 text-xs text-ink-muted">{store.invoiceNumber || "Pending Number"}</p>
-              </div>
-              <div className="text-right text-xs">
-                <p className="text-ink-muted">Issued</p>
-                <p className="font-medium text-ink">
-                  {store.issueDate ? formatDate(store.issueDate) : "-"}
-                </p>
-                <p className="mt-2 text-ink-muted">Due</p>
-                <p className="font-medium text-ink">{store.dueDate ? formatDate(store.dueDate) : "-"}</p>
-              </div>
-            </header>
+                {canvasBlocks
+                  .filter((block) => block.enabled)
+                  .map((block) => {
+                    if (block.kind === "section") {
+                      if (block.section === "header") return <div key={block.id}>{headerSection}</div>;
+                      if (block.section === "billTo") return <div key={block.id} className="mt-6">{billToSection}</div>;
+                      if (block.section === "project") return <div key={block.id} className="mt-6">{projectSection}</div>;
+                      if (block.section === "lineItems") return <SharedLineItems key={block.id} />;
+                      if (block.section === "totals") return <div key={block.id}>{totalsSection}</div>;
+                      if (block.section === "notes") return <div key={block.id}>{notesSection}</div>;
+                    }
 
-            <section className="mt-6 grid gap-4 md:grid-cols-2">
+                    if (block.kind === "table") {
+                      return (
+                        <section key={block.id} className="mt-6 rounded-lg border border-surface-border p-3">
+                          <p className="text-sm font-semibold text-ink">{block.title || "Custom Table"}</p>
+                          <div className="mt-2 overflow-hidden rounded-md border border-surface-border">
+                            <table className="min-w-full text-xs">
+                              <thead className="bg-slate-50 text-ink-muted">
+                                <tr>
+                                  {block.columns.map((column) => (
+                                    <th key={column} className="px-2 py-2 text-left font-medium">
+                                      {column}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  {block.columns.map((column) => (
+                                    <td key={column} className="border-t border-surface-border px-2 py-2 text-ink-muted">
+                                      Fill in {column.toLowerCase()}
+                                    </td>
+                                  ))}
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </section>
+                      );
+                    }
+
+                    return null;
+                  })}
+              </div>
+            ) : (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Bill To</p>
-                <p className="mt-2 font-semibold text-ink">{store.billTo.name || "Client Name"}</p>
-                <p className="text-xs text-ink-muted">{store.billTo.email || "client@email.com"}</p>
-                {store.billTo.company ? <p className="text-xs text-ink-muted">{store.billTo.company}</p> : null}
-                {store.billTo.address ? <p className="text-xs text-ink-muted">{store.billTo.address}</p> : null}
-                {store.billTo.city ? (
-                  <p className="text-xs text-ink-muted">
-                    {store.billTo.city}
-                    {store.billTo.country ? `, ${store.billTo.country}` : ""}
-                  </p>
-                ) : null}
+                {headerSection}
+                <section className="mt-6 grid gap-4 md:grid-cols-2">
+                  <div>{billToSection}</div>
+                  <div>{projectSection}</div>
+                </section>
+                <SharedLineItems />
+                {totalsSection}
               </div>
-              <div className="text-left md:text-right">
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Project</p>
-                <p className="mt-2 font-semibold text-ink">{store.projectName || "Project Name"}</p>
-                <p className="text-xs text-ink-muted">
-                  {store.projectDescription || "Project description will appear here."}
-                </p>
-              </div>
-            </section>
-
-            <SharedLineItems />
-
-            <section className="mt-6 flex justify-end">
-              <TotalsSummary
-                color={color}
-                currency={store.currency}
-                discountAmount={totals.discountAmount}
-                subtotal={totals.subtotal}
-                taxAmount={totals.taxAmount}
-                taxLabel={store.taxLabel}
-                taxRate={store.taxRate}
-                total={totals.total}
-              />
-            </section>
+            )}
           </div>
         ) : null}
 
-        {(store.notes || store.footer) && (
-          <section className="mt-8 space-y-3 border-t pt-4 text-xs">
-            {store.notes ? (
-              <div>
-                <p className="font-semibold text-ink">Notes</p>
-                <p className="text-ink-muted">{store.notes}</p>
-              </div>
-            ) : null}
-            {store.footer ? <p className="text-center text-ink-subtle">{store.footer}</p> : null}
-          </section>
-        )}
+        {(store.notes || store.footer) && !canvasBlocks && notesSection}
       </div>
     </div>
   );
