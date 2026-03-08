@@ -76,41 +76,15 @@ export function usePDFDownload(): {
   ): Promise<void> => {
     setIsDownloading(true);
     try {
-      const response = await fetch(`/api/pdf/${invoiceId}`, {
-        method: "POST",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json", Accept: "application/pdf" },
-        body: JSON.stringify({
-          download: true,
-          fileName: invoiceNumber,
-        }),
-      });
-
-      if (response.ok && (response.headers.get("content-type") || "").includes("application/pdf")) {
-        const blob = await response.blob();
-        if (blob.size) {
-          saveBlob(blob, invoiceNumber);
-          return;
-        }
-      }
-
-      if (!response.ok && response.status !== 204) {
-        let reason = `PDF request failed (${response.status})`;
-        try {
-          const text = await response.text();
-          if (text) reason = text;
-        } catch {
-          // ignore parse failure
-        }
-        throw new Error(reason);
-      }
-
-      // Extension-safe fallback path that avoids direct PDF navigation requests.
+      // Always use base64 transport for downloads to avoid browser/plugin interception.
       const fallbackBlob = await requestBase64Fallback(invoiceId, invoiceNumber, true);
+      if (!fallbackBlob.size) {
+        throw new Error("Empty PDF file");
+      }
       saveBlob(fallbackBlob, invoiceNumber);
     } catch (error) {
       console.error("PDF download error:", error);
-      throw new Error("Unable to start PDF download");
+      throw new Error(error instanceof Error ? error.message : "Unable to start PDF download");
     } finally {
       setIsDownloading(false);
     }

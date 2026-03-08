@@ -24,8 +24,42 @@ model User {
   invoices        Invoice[]
   clients         Client[]
   invoiceSettings InvoiceSettings?
+  oauthConnections UserOauthConnection[]
+  feedbackEntries  Feedback[]
 
   @@map("users")
+}
+
+model UserOauthConnection {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String
+  providerAccountId String
+  providerEmail     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, provider])
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("user_oauth_connections")
+}
+
+model Feedback {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    String
+  subject     String
+  message     String
+  contactEmail String?
+  status      String   @default("open")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("feedback")
 }
 
 model UserProfile {

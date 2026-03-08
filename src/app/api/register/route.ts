@@ -20,7 +20,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const { name, email, password } = parsed.data;
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
     if (existing) {
       return NextResponse.json(
@@ -31,12 +32,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const hashed = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
-      data: { name, email, password: hashed },
+      data: { name, email: normalizedEmail, password: hashed },
       select: { id: true, email: true, name: true },
     });
 
-    await prisma.userProfile.create({ data: { userId: user.id } });
-    await prisma.invoiceSettings.create({ data: { userId: user.id } });
+    try {
+      await prisma.userProfile.create({ data: { userId: user.id } });
+      await prisma.invoiceSettings.create({ data: { userId: user.id } });
+    } catch (error) {
+      console.error("Post-registration defaults failed:", error);
+    }
 
     return NextResponse.json({ success: true, data: user }, { status: 201 });
   } catch (error) {

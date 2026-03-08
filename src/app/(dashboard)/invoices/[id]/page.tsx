@@ -69,6 +69,7 @@ export default function InvoiceDetailPage(): JSX.Element {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [customSubject, setCustomSubject] = useState("");
   const [customMessage, setCustomMessage] = useState("");
+  const [statusAction, setStatusAction] = useState<"select" | "sent" | "paid" | null>(null);
 
   const loadInvoice = useCallback(async (): Promise<void> => {
     try {
@@ -109,6 +110,8 @@ export default function InvoiceDetailPage(): JSX.Element {
 
   const updateStatus = async (status: string): Promise<void> => {
     if (!invoice) return;
+    const action = status === "SENT" ? "sent" : status === "PAID" ? "paid" : "select";
+    setStatusAction(action);
     try {
       const response = await fetch(`/api/invoices/${invoice.id}`, {
         method: "PUT",
@@ -128,6 +131,8 @@ export default function InvoiceDetailPage(): JSX.Element {
         title: "Status update failed",
         description: error instanceof Error ? error.message : "Unable to update status",
       });
+    } finally {
+      setStatusAction(null);
     }
   };
 
@@ -239,7 +244,11 @@ export default function InvoiceDetailPage(): JSX.Element {
             <ExternalLink className="mr-2 h-4 w-4" />
             {isOpening ? "Opening..." : "Open PDF"}
           </Button>
-          <Select value={invoice.status} onValueChange={(value) => void updateStatus(value)}>
+          <Select
+            disabled={statusAction !== null}
+            value={invoice.status}
+            onValueChange={(value) => void updateStatus(value)}
+          >
             <SelectTrigger className="w-[160px]">
               <SelectValue />
             </SelectTrigger>
@@ -253,9 +262,13 @@ export default function InvoiceDetailPage(): JSX.Element {
               <SelectItem value="CANCELLED">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => void updateStatus("SENT")}>
+          <Button
+            disabled={statusAction !== null}
+            variant="outline"
+            onClick={() => void updateStatus("SENT")}
+          >
             <Send className="mr-2 h-4 w-4" />
-            Mark Sent
+            {statusAction === "sent" ? "Marking..." : "Mark Sent"}
           </Button>
           <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
             <DialogTrigger asChild>
@@ -297,7 +310,9 @@ export default function InvoiceDetailPage(): JSX.Element {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button onClick={() => void updateStatus("PAID")}>Mark Paid</Button>
+          <Button disabled={statusAction !== null} onClick={() => void updateStatus("PAID")}>
+            {statusAction === "paid" ? "Marking..." : "Mark Paid"}
+          </Button>
           <Button variant="destructive" onClick={() => void deleteInvoice()}>
             <Trash2 className="mr-2 h-4 w-4" />
             Delete

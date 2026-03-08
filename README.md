@@ -19,7 +19,6 @@ Mobile-first invoice management built with Next.js, Prisma, PostgreSQL, and Next
 - Next.js 14 (App Router)
 - TypeScript
 - Prisma ORM + PostgreSQL
-- NextAuth (Credentials)
 - NextAuth (Credentials + Google/GitHub OAuth)
 - Tailwind CSS + Radix UI
 - React PDF renderer
@@ -45,10 +44,10 @@ cp .env.example .env.local
 - `NEXTAUTH_URL`
 - `NEXT_PUBLIC_APP_URL`
 
-4. Run migrations and generate Prisma client:
+4. Sync schema and generate Prisma client:
 
 ```bash
-pnpm db:migrate
+pnpm exec prisma db push
 pnpm db:generate
 ```
 
@@ -68,9 +67,9 @@ NEXTAUTH_SECRET="your-secret-key-min-32-chars"
 NEXTAUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_NAME="LedgerBloom"
-UPLOAD_DIR="./public/uploads"
 MAX_UPLOAD_SIZE_MB=5
 EMAIL_FROM="LedgerBloom <noreply@your-domain.com>"
+FEEDBACK_RECEIVER_EMAIL=""
 GOOGLE_CLIENT_ID=""
 GOOGLE_CLIENT_SECRET=""
 GITHUB_ID=""
@@ -128,6 +127,20 @@ Social authentication is enabled when provider env vars are set:
 - GitHub: `GITHUB_ID`, `GITHUB_SECRET`
 
 Without these vars, only email/password login is shown.
+Linked providers can be managed in `Settings -> Linked Accounts`.
+
+## Linked Accounts Security
+
+- OAuth links are tracked in `user_oauth_connections`.
+- Google sign-in requires verified email from the provider.
+- Provider account ID is pinned to one LedgerBloom user to prevent cross-account linking.
+- Use the same email on LedgerBloom and OAuth provider for best security.
+
+## In-App Feedback
+
+- Users can submit issues and enhancement requests in `Settings -> Feedback`.
+- Feedback is stored in the `feedback` table.
+- Optional notifications can be sent to `FEEDBACK_RECEIVER_EMAIL`.
 
 ## Automatic Due/Overdue Reminders
 
@@ -208,22 +221,20 @@ Users can:
 
 ### Option B: VPS / Docker Host
 
-1. Build app:
+1. Build image:
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm db:generate
-pnpm build
+docker build -t ledgerbloom:latest .
 ```
 
-2. Start app:
+2. Run container:
 
 ```bash
-pnpm start
+docker run --env-file .env.local -p 3000:3000 ledgerbloom:latest
 ```
 
 3. Put behind Apache or Nginx reverse proxy (HTTPS required).
-4. Run `prisma migrate deploy` on release.
+4. Run `pnpm exec prisma db push` (or your migration workflow) on release.
 
 ## Design Direction
 

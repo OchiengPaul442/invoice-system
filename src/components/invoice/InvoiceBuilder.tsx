@@ -61,8 +61,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
   const searchParams = useSearchParams();
   const { downloadPDF, isDownloading } = usePDFDownload();
   const { clients } = useClients<ClientOption>("isActive=true");
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMode, setSaveMode] = useState<"draft" | "download" | null>(null);
+  const [activeSaveAction, setActiveSaveAction] = useState<"draft" | "download" | null>(null);
   const [isLoadingInvoice, setIsLoadingInvoice] = useState(Boolean(invoiceId));
 
   const store = useInvoiceBuilderStore();
@@ -364,8 +363,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
   );
 
   const saveInvoice = async (downloadAfterSave: boolean): Promise<void> => {
-    setSaveMode(downloadAfterSave ? "download" : "draft");
-    setIsSaving(true);
+    setActiveSaveAction(downloadAfterSave ? "download" : "draft");
     try {
       const response = await fetch(invoiceId ? `/api/invoices/${invoiceId}` : "/api/invoices", {
         method: invoiceId ? "PUT" : "POST",
@@ -391,6 +389,10 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
       if (downloadAfterSave) {
         try {
           await downloadPDF(id as string, number);
+          // Give the browser a short tick to begin download before route transition.
+          await new Promise((resolve) => {
+            window.setTimeout(resolve, 200);
+          });
         } catch (error) {
           toast({
             variant: "destructive",
@@ -411,8 +413,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
         description: error instanceof Error ? error.message : "Unable to save invoice",
       });
     } finally {
-      setIsSaving(false);
-      setSaveMode(null);
+      setActiveSaveAction(null);
     }
   };
 
@@ -703,19 +704,25 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
           <InvoicePreview />
           <div className="grid gap-2">
             <Button
-              disabled={isSaving || isDownloading}
+              disabled={activeSaveAction !== null || isDownloading}
               onClick={() => void saveInvoice(false)}
               variant="outline"
             >
-              {isSaving && saveMode === "draft" ? "Saving..." : "Save Draft"}
+              {activeSaveAction === "draft" ? "Saving draft..." : "Save Draft"}
             </Button>
-            <Button disabled={isSaving || isDownloading} onClick={() => void saveInvoice(true)}>
-              {isSaving && saveMode === "download"
-                ? "Saving..."
+            <Button
+              disabled={activeSaveAction !== null || isDownloading}
+              onClick={() => void saveInvoice(true)}
+            >
+              {activeSaveAction === "download"
+                ? "Saving invoice..."
                 : isDownloading
                   ? "Downloading..."
                   : "Save & Download PDF"}
             </Button>
+            <p className="text-xs text-ink-muted">
+              Save Draft keeps the invoice in draft. Save & Download PDF saves and immediately exports a PDF copy.
+            </p>
           </div>
         </div>
       </div>

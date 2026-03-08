@@ -133,21 +133,32 @@ export function BusinessForm({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-surface-border bg-surface-muted/70 p-3">
-        <label className="flex items-center justify-between gap-3 text-sm">
+      <div className="rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-50 to-surface-muted p-4 dark:border-brand-600/40 dark:from-brand-900/30 dark:to-slate-900">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="font-medium text-ink">Freelancer Mode</p>
-            <p className="text-xs text-ink-muted">
-              Use personal sender details ({accountName || "your name"} / {accountEmail || "your email"}).
+            <p className="text-base font-semibold text-ink">Freelancer Mode</p>
+            <p className="text-sm text-ink-muted">
+              Show your personal profile ({accountName || "your name"} / {accountEmail || "your email"}) on invoices instead of business details.
             </p>
           </div>
-          <input
-            checked={Boolean(values.isFreelancer)}
-            className="h-4 w-4 rounded border-surface-border accent-brand-600"
-            onChange={(event) => setValues((current) => ({ ...current, isFreelancer: event.target.checked }))}
-            type="checkbox"
-          />
-        </label>
+          <button
+            aria-pressed={Boolean(values.isFreelancer)}
+            className={`inline-flex h-9 min-w-[112px] items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
+              values.isFreelancer
+                ? "bg-brand-600 text-white hover:bg-brand-700"
+                : "bg-white text-ink ring-1 ring-surface-border hover:bg-surface-muted dark:bg-slate-950"
+            }`}
+            onClick={() =>
+              setValues((current) => ({
+                ...current,
+                isFreelancer: !current.isFreelancer,
+              }))
+            }
+            type="button"
+          >
+            {values.isFreelancer ? "Enabled" : "Disabled"}
+          </button>
+        </div>
       </div>
       <LogoUpload
         value={values.logoPath}

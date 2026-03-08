@@ -10,18 +10,22 @@ const LONG_SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 const SHORT_SESSION_MAX_AGE = 24 * 60 * 60; // 1 day
 
 async function ensureUserDefaults(userId: string): Promise<void> {
-  await Promise.all([
-    prisma.userProfile.upsert({
-      where: { userId },
-      update: {},
-      create: { userId },
-    }),
-    prisma.invoiceSettings.upsert({
-      where: { userId },
-      update: {},
-      create: { userId },
-    }),
-  ]);
+  try {
+    await Promise.all([
+      prisma.userProfile.upsert({
+        where: { userId },
+        update: {},
+        create: { userId },
+      }),
+      prisma.invoiceSettings.upsert({
+        where: { userId },
+        update: {},
+        create: { userId },
+      }),
+    ]);
+  } catch (error) {
+    console.error("Ensure user defaults failed:", error);
+  }
 }
 
 async function ensureOAuthUser({
@@ -31,8 +35,9 @@ async function ensureOAuthUser({
   email: string;
   name?: string | null;
 }): Promise<{ id: string; name: string; email: string }> {
+  const normalizedEmail = email.trim().toLowerCase();
   const existing = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
     select: { id: true, name: true, email: true },
   });
 
@@ -41,11 +46,11 @@ async function ensureOAuthUser({
     return existing;
   }
 
-  const fallbackName = (name || "").trim() || email.split("@")[0] || "User";
+  const fallbackName = (name || "").trim() || normalizedEmail.split("@")[0] || "User";
   const password = await bcrypt.hash(crypto.randomUUID(), 12);
   const created = await prisma.user.create({
     data: {
-      email,
+      email: normalizedEmail,
       name: fallbackName,
       password,
     },
@@ -120,9 +125,20 @@ export const authOptions: NextAuthOptions = {
   },
   providers,
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (!account || account.provider === "credentials") {
         return true;
+      }
+
+      if (account.provider !== "google" && account.provider !== "github") {
+        return false;
+      }
+
+      if (account.provider === "google") {
+        const emailVerified = (profile as { email_verified?: boolean } | undefined)?.email_verified;
+        if (emailVerified === false) {
+          return false;
+        }
       }
 
       const email = user.email?.trim().toLowerCase();
@@ -131,6 +147,43 @@ export const authOptions: NextAuthOptions = {
       }
 
       const dbUser = await ensureOAuthUser({ email, name: user.name });
+      if (!account.providerAccountId) {
+        return false;
+      }
+
+      const existingProviderLink = await prisma.userOauthConnection.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+          },
+        },
+        select: { userId: true },
+      });
+
+      if (existingProviderLink && existingProviderLink.userId !== dbUser.id) {
+        return false;
+      }
+
+      await prisma.userOauthConnection.upsert({
+        where: {
+          userId_provider: {
+            userId: dbUser.id,
+            provider: account.provider,
+          },
+        },
+        update: {
+          providerAccountId: account.providerAccountId,
+          providerEmail: email,
+        },
+        create: {
+          userId: dbUser.id,
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+          providerEmail: email,
+        },
+      });
+
       user.id = dbUser.id;
       user.name = dbUser.name;
       user.email = dbUser.email;

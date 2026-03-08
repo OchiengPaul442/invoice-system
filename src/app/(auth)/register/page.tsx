@@ -112,14 +112,14 @@ export default function RegisterPage(): JSX.Element {
 
   return (
     <AuthSplitShell
-      subtitle="Set up your workspace and start sending clean, professional invoices in minutes."
-      title="Build Revenue With Better Billing"
+      subtitle="Create your workspace and start sending polished invoices that clients can trust."
+      title="Launch Your Billing Workspace"
     >
       <div className="w-full">
-        <div className="mb-12 flex items-center justify-center gap-3 lg:justify-start">
+        <div className="mb-8 flex items-center justify-center gap-3 lg:justify-start">
           <p className="text-xl font-semibold text-ink">LedgerBloom</p>
         </div>
-        <div className="rounded-xl border border-surface-border bg-white/90 p-6 shadow-sm dark:bg-slate-950/80 sm:p-8">
+        <div className="w-full rounded-xl border border-surface-border bg-white/90 p-6 shadow-sm dark:bg-slate-950/80 sm:p-8">
           <div className="mb-7">
             <div className="mb-4 flex items-center gap-3">
               <Image
@@ -136,7 +136,7 @@ export default function RegisterPage(): JSX.Element {
               Create Account
             </h1>
             <p className="mt-3 text-sm text-ink-muted">
-              Enter your details to open your billing workspace.
+              Set up your profile and start billing clients professionally.
             </p>
           </div>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
@@ -164,7 +164,7 @@ export default function RegisterPage(): JSX.Element {
                 <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
               ) : null}
             </div>
-            <Button className="h-11 w-full rounded-lg bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200" disabled={isSubmitting || oauthLoading !== null} type="submit">
+            <Button className="h-11 w-full rounded-lg bg-brand-600 text-white hover:bg-brand-700 dark:bg-brand-500 dark:text-white dark:hover:bg-brand-600" disabled={isSubmitting || oauthLoading !== null} type="submit">
               {isSubmitting ? "Creating account..." : "Create account"}
             </Button>
           </form>
