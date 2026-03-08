@@ -3,6 +3,7 @@ import { Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { FooterBlock } from "@/components/pdf/shared/FooterBlock";
 import { toLineItems } from "@/components/pdf/shared/helpers";
 import { TotalsBlock } from "@/components/pdf/shared/TotalsBlock";
+import { Watermark } from "@/components/pdf/shared/Watermark";
 import { PDFTemplateProps } from "@/components/pdf/shared/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -83,6 +84,7 @@ export function MinimalTemplate({ invoice, profile }: PDFTemplateProps): JSX.Ele
       />
 
       <FooterBlock footer={invoice.footer} />
+      <Watermark />
     </Page>
   );
 }

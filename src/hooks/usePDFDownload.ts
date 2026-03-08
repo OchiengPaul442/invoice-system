@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 interface Base64PdfResponse {
   success: boolean;
@@ -82,6 +83,10 @@ export function usePDFDownload(): {
         throw new Error("Empty PDF file");
       }
       saveBlob(fallbackBlob, invoiceNumber);
+      trackEvent("invoice_pdf_downloaded", {
+        invoice_id: invoiceId,
+        invoice_number: invoiceNumber,
+      });
     } catch (error) {
       console.error("PDF download error:", error);
       throw new Error(error instanceof Error ? error.message : "Unable to start PDF download");
@@ -104,6 +109,11 @@ export function usePDFDownload(): {
         } else {
           window.open(cloudPdfUrl, "_blank", "noopener,noreferrer");
         }
+        trackEvent("invoice_pdf_opened", {
+          invoice_id: invoiceId,
+          invoice_number: invoiceNumber,
+          source: "cloudinary",
+        });
         return;
       }
 
@@ -132,6 +142,11 @@ export function usePDFDownload(): {
       } else {
         window.open(objectUrl, "_blank", "noopener,noreferrer");
       }
+      trackEvent("invoice_pdf_opened", {
+        invoice_id: invoiceId,
+        invoice_number: invoiceNumber,
+        source: "generated",
+      });
       window.setTimeout(() => {
         window.URL.revokeObjectURL(objectUrl);
       }, 30_000);

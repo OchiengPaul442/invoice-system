@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { jsonFetcher } from "@/lib/fetcher";
 import { usePDFDownload } from "@/hooks/usePDFDownload";
 import { toast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/analytics";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface InvoiceDetail {
@@ -100,6 +101,11 @@ export default function InvoiceDetailPage(): JSX.Element {
         throw new Error(payload.error || "Failed to update status");
       }
       toast({ title: "Status updated", description: `Invoice marked as ${status}` });
+      trackEvent("invoice_status_updated", {
+        invoice_id: invoice.id,
+        invoice_number: invoice.invoiceNumber,
+        status,
+      });
       await mutate();
     } catch (error) {
       console.error("Update status failed:", error);
@@ -125,6 +131,10 @@ export default function InvoiceDetailPage(): JSX.Element {
         throw new Error(payload.error || "Failed to delete invoice");
       }
       toast({ title: "Invoice deleted" });
+      trackEvent("invoice_deleted", {
+        invoice_id: invoice.id,
+        invoice_number: invoice.invoiceNumber,
+      });
       router.push("/invoices");
       router.refresh();
     } catch (error) {
@@ -154,6 +164,10 @@ export default function InvoiceDetailPage(): JSX.Element {
         throw new Error(payload.error || "Failed to send invoice email");
       }
       toast({ title: "Invoice emailed", description: `Sent to ${invoice.billToEmail}` });
+      trackEvent("invoice_emailed", {
+        invoice_id: invoice.id,
+        invoice_number: invoice.invoiceNumber,
+      });
       setEmailDialogOpen(false);
       await mutate();
     } catch (error) {

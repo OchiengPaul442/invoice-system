@@ -198,7 +198,7 @@ export function InvoicePreview(): JSX.Element {
 
   return (
     <div className="h-full w-full overflow-auto rounded-xl border border-surface-border bg-gradient-to-br from-[#f4fbf8] via-white to-[#fff6ea] p-3 sm:p-4">
-      <div className="mx-auto min-h-[842px] w-full max-w-[595px] rounded-xl bg-white p-5 text-sm shadow-lg sm:p-8">
+      <div className="relative mx-auto min-h-[842px] w-full max-w-[595px] rounded-xl bg-white p-5 text-sm shadow-lg sm:p-8">
         {store.templateType === "MODERN" ? (
           <div>
             <header className="grid gap-4 rounded-xl p-4 text-white sm:grid-cols-[1fr_auto]" style={{ backgroundColor: accent }}>
@@ -434,6 +434,9 @@ export function InvoicePreview(): JSX.Element {
         ) : null}
 
         {(store.notes || store.footer) && !canvasBlocks && notesSection}
+        <p className="pointer-events-none absolute bottom-4 right-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
+          LedgerBloom
+        </p>
       </div>
     </div>
   );

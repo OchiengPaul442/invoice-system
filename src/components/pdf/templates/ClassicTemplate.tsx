@@ -4,6 +4,7 @@ import { FooterBlock } from "@/components/pdf/shared/FooterBlock";
 import { PaymentBlock } from "@/components/pdf/shared/PaymentBlock";
 import { toLineItems } from "@/components/pdf/shared/helpers";
 import { TotalsBlock } from "@/components/pdf/shared/TotalsBlock";
+import { Watermark } from "@/components/pdf/shared/Watermark";
 import { PDFTemplateProps } from "@/components/pdf/shared/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -152,6 +153,7 @@ export function ClassicTemplate({ invoice, profile }: PDFTemplateProps): JSX.Ele
       ) : null}
 
       <FooterBlock footer={invoice.footer} />
+      <Watermark />
     </Page>
   );
 }

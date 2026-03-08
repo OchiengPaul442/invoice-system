@@ -67,6 +67,7 @@ NEXTAUTH_SECRET="your-secret-key-min-32-chars"
 NEXTAUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_NAME="LedgerBloom"
+NEXT_PUBLIC_GA_MEASUREMENT_ID=""
 MAX_UPLOAD_SIZE_MB=5
 EMAIL_FROM="LedgerBloom <noreply@your-domain.com>"
 FEEDBACK_RECEIVER_EMAIL=""

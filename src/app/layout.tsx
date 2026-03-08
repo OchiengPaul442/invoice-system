@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 import Script from "next/script";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { SWRProvider } from "@/components/providers/SWRProvider";
 import { Toaster } from "@/components/ui/toaster";
@@ -48,6 +49,7 @@ export default function RootLayout({
         <SessionProvider>
           <SWRProvider>
             {children}
+            <GoogleAnalytics />
             <Toaster />
           </SWRProvider>
         </SessionProvider>

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useClients } from "@/hooks/useClients";
 import { usePDFDownload } from "@/hooks/usePDFDownload";
 import { toast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/analytics";
 import { formatCurrency, SUPPORTED_CURRENCIES } from "@/lib/utils";
 import { useInvoiceBuilderStore } from "@/store/invoice-builder.store";
 import { BillingType, LineItem, Milestone, TemplateType } from "@/types/invoice";
@@ -385,6 +386,12 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
 
       const id = data.data?.id ?? invoiceId;
       const number = data.data?.invoiceNumber ?? store.invoiceNumber ?? "invoice";
+      trackEvent("invoice_saved", {
+        invoice_id: id,
+        invoice_number: number,
+        mode: invoiceId ? "update" : "create",
+        download_after_save: downloadAfterSave,
+      });
 
       if (downloadAfterSave) {
         try {
