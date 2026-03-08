@@ -9,11 +9,13 @@ declare module "next-auth" {
 
   interface User {
     id: string;
+    remember?: boolean;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
+    remember?: boolean;
   }
 }

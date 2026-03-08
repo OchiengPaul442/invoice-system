@@ -20,6 +20,7 @@ Mobile-first invoice management built with Next.js, Prisma, PostgreSQL, and Next
 - TypeScript
 - Prisma ORM + PostgreSQL
 - NextAuth (Credentials)
+- NextAuth (Credentials + Google/GitHub OAuth)
 - Tailwind CSS + Radix UI
 - React PDF renderer
 
@@ -70,6 +71,11 @@ NEXT_PUBLIC_APP_NAME="LedgerBloom"
 UPLOAD_DIR="./public/uploads"
 MAX_UPLOAD_SIZE_MB=5
 EMAIL_FROM="LedgerBloom <noreply@your-domain.com>"
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+GITHUB_ID=""
+GITHUB_SECRET=""
+REMINDERS_CRON_SECRET=""
 RESEND_API_KEY=""
 SMTP_HOST=""
 SMTP_PORT="587"
@@ -113,6 +119,25 @@ Deliverability notes:
 Invoice emails include:
 - attached PDF invoice
 - secure external view link (no app account required)
+
+## OAuth Sign-In
+
+Social authentication is enabled when provider env vars are set:
+
+- Google: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- GitHub: `GITHUB_ID`, `GITHUB_SECRET`
+
+Without these vars, only email/password login is shown.
+
+## Automatic Due/Overdue Reminders
+
+Run `POST /api/reminders/due` from a scheduler (for example every morning) with header:
+
+- `x-reminder-secret: <REMINDERS_CRON_SECRET>`
+
+The endpoint sends:
+- due-soon reminders (up to 2 days before due date)
+- overdue reminders (once per day per invoice state)
 
 ## Cloudinary Invoice PDF Storage
 

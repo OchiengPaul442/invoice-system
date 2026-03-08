@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Paintbrush, Plus, Table, Trash2 } from "lucide-react";
+import { TemplatePreviewCard } from "@/components/templates/TemplatePreviewCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,7 +19,6 @@ interface TemplateCard {
   key: TemplateType;
   name: string;
   description: string;
-  image: string;
   origin: string;
 }
 
@@ -66,35 +65,30 @@ const templates: TemplateCard[] = [
     key: "CLASSIC",
     name: "Classic Ledger",
     description: "Trusted enterprise style inspired by legal and financial billing docs.",
-    image: "/template-previews/classic.png",
     origin: "Structured typography from accounting-led invoice systems.",
   },
   {
     key: "MODERN",
     name: "Modern Studio",
     description: "Confident card layout inspired by modern SaaS and design agency billing.",
-    image: "/template-previews/modern.png",
     origin: "Inspired by contemporary dashboard patterns on Dribbble.",
   },
   {
     key: "MINIMAL",
     name: "Minimal Mono",
     description: "Sparse high-contrast invoice that keeps attention on numbers and terms.",
-    image: "/template-previews/minimal.png",
     origin: "Inspired by editorial finance layouts used by technical teams.",
   },
   {
     key: "MILESTONE",
     name: "Milestone Matrix",
     description: "Phase-based invoice for project retainers and delivery checkpoints.",
-    image: "/template-previews/milestone.png",
     origin: "Inspired by project-finance milestone reporting patterns.",
   },
   {
     key: "RETAINER",
     name: "Retainer Pulse",
     description: "Recurring service invoice with prominent period and fee visibility.",
-    image: "/template-previews/retainer.png",
     origin: "Inspired by subscription and managed-service billing workflows.",
   },
 ];
@@ -350,7 +344,7 @@ export default function TemplatesPage(): JSX.Element {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-surface-border bg-white p-4">
+      <div className="rounded-xl border border-surface-border bg-card/90 p-4 backdrop-blur">
         <h1 className="text-2xl font-semibold text-ink">Invoice Templates</h1>
         <p className="mt-2 text-sm text-ink-muted">{inspirationSummary}</p>
       </div>
@@ -377,7 +371,7 @@ export default function TemplatesPage(): JSX.Element {
                   <CardTitle className="flex items-center justify-between">
                     <span>{template.name}</span>
                     {isDefault ? (
-                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700 dark:bg-brand-500/20 dark:text-brand-100">
                         Default
                       </span>
                     ) : null}
@@ -385,15 +379,7 @@ export default function TemplatesPage(): JSX.Element {
                   <CardDescription>{template.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div className="overflow-hidden rounded-lg border border-surface-border">
-                    <Image
-                      alt={`${template.name} template preview`}
-                      className="h-auto w-full"
-                      height={800}
-                      src={template.image}
-                      width={600}
-                    />
-                  </div>
+                  <TemplatePreviewCard template={template.key} />
                   <p className="text-xs text-ink-muted">{template.origin}</p>
                 </CardContent>
                 <CardFooter className="gap-2">
@@ -430,13 +416,7 @@ export default function TemplatesPage(): JSX.Element {
                       <DialogHeader>
                         <DialogTitle>{template.name} Preview</DialogTitle>
                       </DialogHeader>
-                      <Image
-                        alt={`${template.name} full preview`}
-                        className="h-auto w-full rounded-md border border-surface-border"
-                        height={800}
-                        src={template.image}
-                        width={600}
-                      />
+                      <TemplatePreviewCard expanded template={template.key} />
                     </DialogContent>
                   </Dialog>
                 </CardFooter>
@@ -590,7 +570,9 @@ export default function TemplatesPage(): JSX.Element {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2 text-xs text-ink-muted">
-                <span className="rounded-full bg-slate-100 px-2 py-1">{template.templateType}</span>
+                <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800/80 dark:text-slate-100">
+                  {template.templateType}
+                </span>
                 <span className="inline-flex items-center gap-1">
                   <span className="h-3 w-3 rounded-full border" style={{ backgroundColor: template.primaryColor }} />
                   {template.primaryColor}

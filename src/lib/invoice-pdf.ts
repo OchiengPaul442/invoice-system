@@ -2,7 +2,7 @@ import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { PDFDocument } from "@/components/pdf/PDFDocument";
 import { toLineItems, toMilestones } from "@/components/pdf/shared/helpers";
-import { PDFInvoice } from "@/components/pdf/shared/types";
+import { PDFInvoice, PDFProfile } from "@/components/pdf/shared/types";
 import { isCloudinaryConfigured, uploadPdfToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 
@@ -18,9 +18,15 @@ export async function generateInvoicePdfBuffer(
     throw new Error("Invoice not found");
   }
 
-  const profile = await prisma.userProfile.findUnique({
-    where: { userId },
-  });
+  const [profile, user] = await Promise.all([
+    prisma.userProfile.findUnique({
+      where: { userId },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    }),
+  ]);
 
   const normalizedInvoice: PDFInvoice = {
     ...invoice,
@@ -37,9 +43,28 @@ export async function generateInvoicePdfBuffer(
     total: Number(invoice.total),
   };
 
+  const normalizedProfile: PDFProfile | null = profile
+    ? {
+        ...profile,
+        senderName:
+          profile.isFreelancer || !profile.businessName
+            ? user?.name || profile.businessName || null
+            : profile.businessName,
+        senderEmail:
+          profile.isFreelancer || !profile.businessEmail
+            ? user?.email || profile.businessEmail || null
+            : profile.businessEmail,
+      }
+    : user
+      ? {
+          senderName: user.name,
+          senderEmail: user.email,
+        }
+      : null;
+
   const document = React.createElement(PDFDocument, {
     invoice: normalizedInvoice,
-    profile,
+    profile: normalizedProfile,
   });
 
   const pdfBuffer = await renderToBuffer(document as React.ReactElement);

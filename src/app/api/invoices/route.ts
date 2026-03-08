@@ -50,6 +50,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       where.OR = [
         { invoiceNumber: { contains: search, mode: "insensitive" } },
         { billToName: { contains: search, mode: "insensitive" } },
+        { billToEmail: { contains: search, mode: "insensitive" } },
+        { billToCompany: { contains: search, mode: "insensitive" } },
         { projectName: { contains: search, mode: "insensitive" } },
       ];
     }

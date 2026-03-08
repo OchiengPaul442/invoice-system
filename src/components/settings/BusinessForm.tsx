@@ -20,6 +20,9 @@ export interface BusinessProfileValues {
   businessPhone?: string;
   businessEmail?: string;
   businessWebsite?: string;
+  isFreelancer?: boolean;
+  mobileMoneyProvider?: string;
+  mobileMoneyNumber?: string;
   taxId?: string;
   currency?: string;
   logoPath?: string | null;
@@ -34,9 +37,13 @@ export interface BusinessProfileValues {
 
 export function BusinessForm({
   initialValues,
+  accountName,
+  accountEmail,
   onSaved,
 }: {
   initialValues?: BusinessProfileValues;
+  accountName?: string;
+  accountEmail?: string;
   onSaved?: () => void;
 }): JSX.Element {
   const [values, setValues] = useState<BusinessProfileValues>({
@@ -49,6 +56,9 @@ export function BusinessForm({
     businessPhone: "",
     businessEmail: "",
     businessWebsite: "",
+    isFreelancer: false,
+    mobileMoneyProvider: "",
+    mobileMoneyNumber: "",
     taxId: "",
     currency: "UGX",
     logoPath: null,
@@ -73,6 +83,9 @@ export function BusinessForm({
       businessPhone: initialValues?.businessPhone || "",
       businessEmail: initialValues?.businessEmail || "",
       businessWebsite: initialValues?.businessWebsite || "",
+      isFreelancer: initialValues?.isFreelancer || false,
+      mobileMoneyProvider: initialValues?.mobileMoneyProvider || "",
+      mobileMoneyNumber: initialValues?.mobileMoneyNumber || "",
       taxId: initialValues?.taxId || "",
       currency: initialValues?.currency || "UGX",
       logoPath: initialValues?.logoPath || null,
@@ -120,6 +133,22 @@ export function BusinessForm({
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-surface-border bg-surface-muted/70 p-3">
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <div>
+            <p className="font-medium text-ink">Freelancer Mode</p>
+            <p className="text-xs text-ink-muted">
+              Use personal sender details ({accountName || "your name"} / {accountEmail || "your email"}).
+            </p>
+          </div>
+          <input
+            checked={Boolean(values.isFreelancer)}
+            className="h-4 w-4 rounded border-surface-border accent-brand-600"
+            onChange={(event) => setValues((current) => ({ ...current, isFreelancer: event.target.checked }))}
+            type="checkbox"
+          />
+        </label>
+      </div>
       <LogoUpload
         value={values.logoPath}
         onUploaded={(logoPath) => setValues((current) => ({ ...current, logoPath }))}
@@ -127,21 +156,21 @@ export function BusinessForm({
       />
       <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-1">
-          <Label>Business Name</Label>
+          <Label>{values.isFreelancer ? "Display Name" : "Business Name"}</Label>
           <Input
             value={values.businessName}
             onChange={(event) => update("businessName")(event.target.value)}
           />
         </div>
         <div className="space-y-1">
-          <Label>Business Email</Label>
+          <Label>{values.isFreelancer ? "Sender Email" : "Business Email"}</Label>
           <Input
             value={values.businessEmail}
             onChange={(event) => update("businessEmail")(event.target.value)}
           />
         </div>
         <div className="space-y-1">
-          <Label>Business Phone</Label>
+          <Label>{values.isFreelancer ? "Contact Phone" : "Business Phone"}</Label>
           <Input
             value={values.businessPhone}
             onChange={(event) => update("businessPhone")(event.target.value)}
@@ -239,6 +268,22 @@ export function BusinessForm({
           <Input
             value={values.swiftCode}
             onChange={(event) => update("swiftCode")(event.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Mobile Money Provider</Label>
+          <Input
+            placeholder="MTN MoMo, Airtel Money, M-Pesa"
+            value={values.mobileMoneyProvider}
+            onChange={(event) => update("mobileMoneyProvider")(event.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Mobile Money Number</Label>
+          <Input
+            placeholder="+2567..."
+            value={values.mobileMoneyNumber}
+            onChange={(event) => update("mobileMoneyNumber")(event.target.value)}
           />
         </div>
       </div>

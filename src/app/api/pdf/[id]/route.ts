@@ -20,31 +20,32 @@ function hasPdfSignature(bytes: Uint8Array): boolean {
 
 interface PdfOptions {
   download: boolean;
+  format?: "binary" | "base64";
   fileName?: string | null;
 }
 
-async function buildPdfResponse({
+async function resolvePdfBytes({
   invoiceId,
   userId,
-  download,
   fileName,
 }: {
   invoiceId: string;
   userId: string;
-  download: boolean;
   fileName?: string | null;
-}): Promise<NextResponse> {
+}): Promise<{
+  bytes: Uint8Array;
+  fileName: string;
+}> {
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, userId },
     select: { id: true, invoiceNumber: true, pdfUrl: true },
   });
 
   if (!invoice) {
-    return new NextResponse("Not Found", { status: 404 });
+    throw new Error("Not Found");
   }
 
   const safeFileName = fileName || invoice.invoiceNumber;
-  const dispositionType = download ? "attachment" : "inline";
 
   if (invoice.pdfUrl) {
     const cloudinaryResponse = await fetch(invoice.pdfUrl, { cache: "no-store" });
@@ -54,30 +55,58 @@ async function buildPdfResponse({
         isPdfContentType(cloudinaryResponse.headers.get("content-type")) &&
         hasPdfSignature(bytes)
       ) {
-        return new NextResponse(bytes, {
-          status: 200,
-          headers: {
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `${dispositionType}; filename="${safeFileName}.pdf"`,
-            "Cache-Control": "no-store, no-cache, must-revalidate",
-            "X-PDF-Source": "cloudinary",
-            "X-Content-Type-Options": "nosniff",
-          },
-        });
+        return {
+          bytes,
+          fileName: `${safeFileName}.pdf`,
+        };
       }
     }
   }
 
   const { buffer, invoiceNumber } = await generateInvoicePdfBuffer(invoice.id, userId);
-  const bytes = new Uint8Array(buffer);
+  return {
+    bytes: new Uint8Array(buffer),
+    fileName: `${safeFileName || invoiceNumber}.pdf`,
+  };
+}
 
-  return new NextResponse(bytes, {
+async function buildPdfResponse({
+  invoiceId,
+  userId,
+  download,
+  format,
+  fileName,
+}: {
+  invoiceId: string;
+  userId: string;
+  download: boolean;
+  format?: "binary" | "base64";
+  fileName?: string | null;
+}): Promise<NextResponse> {
+  const payload = await resolvePdfBytes({
+    invoiceId,
+    userId,
+    fileName,
+  });
+
+  if (format === "base64") {
+    return NextResponse.json({
+      success: true,
+      data: {
+        fileName: payload.fileName,
+        contentType: "application/pdf",
+        base64: Buffer.from(payload.bytes).toString("base64"),
+      },
+    });
+  }
+
+  const dispositionType = download ? "attachment" : "inline";
+  return new NextResponse(Buffer.from(payload.bytes), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `${dispositionType}; filename="${safeFileName || invoiceNumber}.pdf"`,
+      "Content-Disposition": `${dispositionType}; filename="${payload.fileName}"`,
       "Cache-Control": "no-store, no-cache, must-revalidate",
-      "X-PDF-Source": "generated",
       "X-Content-Type-Options": "nosniff",
     },
   });
@@ -96,6 +125,7 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const options: PdfOptions = {
       download: searchParams.get("download") === "1",
+      format: "binary",
       fileName: searchParams.get("filename"),
     };
 
@@ -106,6 +136,9 @@ export async function GET(
     });
   } catch (error) {
     console.error("PDF generation failed:", error);
+    if (error instanceof Error && error.message === "Not Found") {
+      return new NextResponse("Not Found", { status: 404 });
+    }
     return new NextResponse("PDF generation failed", { status: 500 });
   }
 }
@@ -126,10 +159,14 @@ export async function POST(
       invoiceId: params.id,
       userId: session.user.id,
       download: body.download ?? true,
+      format: body.format ?? "binary",
       fileName: body.fileName ?? null,
     });
   } catch (error) {
     console.error("PDF generation failed:", error);
+    if (error instanceof Error && error.message === "Not Found") {
+      return new NextResponse("Not Found", { status: 404 });
+    }
     return new NextResponse("PDF generation failed", { status: 500 });
   }
 }

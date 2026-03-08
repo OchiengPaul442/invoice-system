@@ -16,7 +16,7 @@ export function ClientCard({
   return (
     <Link
       href={`/clients/${id}`}
-      className="block rounded-md border border-surface-border bg-white p-4 transition-colors hover:border-brand-200 hover:bg-brand-50/40"
+      className="block rounded-md border border-surface-border bg-card p-4 transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:hover:bg-brand-500/10"
     >
       <p className="font-semibold text-ink">{name}</p>
       <p className="text-sm text-ink-muted">{email}</p>

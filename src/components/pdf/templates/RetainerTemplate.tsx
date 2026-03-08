@@ -22,8 +22,10 @@ const styles = StyleSheet.create({
   price: { flex: 1.5, textAlign: "right" },
 });
 
-export function RetainerTemplate({ invoice }: PDFTemplateProps): JSX.Element {
+export function RetainerTemplate({ invoice, profile }: PDFTemplateProps): JSX.Element {
   const color = invoice.primaryColor || "#0f766e";
+  const senderName = profile?.businessName || profile?.senderName || "Your Business";
+  const senderEmail = profile?.businessEmail || profile?.senderEmail;
   const lineItems = toLineItems(invoice.lineItems);
 
   const periodStart = invoice.servicePeriodStart
@@ -46,6 +48,10 @@ export function RetainerTemplate({ invoice }: PDFTemplateProps): JSX.Element {
       <Text style={styles.meta}>{invoice.invoiceNumber}</Text>
       <Text style={styles.meta}>
         Bill To: {invoice.billToName} ({invoice.billToEmail})
+      </Text>
+      <Text style={styles.meta}>
+        From: {senderName}
+        {senderEmail ? ` (${senderEmail})` : ""}
       </Text>
 
       <View style={styles.summary}>

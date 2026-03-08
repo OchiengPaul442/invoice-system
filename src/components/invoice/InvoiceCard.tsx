@@ -26,7 +26,7 @@ export function InvoiceCard({
   return (
     <Link
       href={`/invoices/${id}`}
-      className="block rounded-lg border border-surface-border bg-white p-4 transition-colors hover:border-brand-200 hover:bg-brand-50/40"
+      className="block rounded-lg border border-surface-border bg-card p-4 transition-colors hover:border-brand-200 hover:bg-brand-50/30 dark:hover:bg-brand-500/10"
     >
       <div className="flex items-center justify-between gap-3">
         <div>

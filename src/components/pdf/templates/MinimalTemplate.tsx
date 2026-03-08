@@ -20,8 +20,10 @@ const styles = StyleSheet.create({
   price: { flex: 1.5, textAlign: "right" },
 });
 
-export function MinimalTemplate({ invoice }: PDFTemplateProps): JSX.Element {
+export function MinimalTemplate({ invoice, profile }: PDFTemplateProps): JSX.Element {
   const color = invoice.primaryColor || "#111827";
+  const senderName = profile?.businessName || profile?.senderName || "Your Business";
+  const senderEmail = profile?.businessEmail || profile?.senderEmail;
   const lineItems = toLineItems(invoice.lineItems);
 
   return (
@@ -40,15 +42,19 @@ export function MinimalTemplate({ invoice }: PDFTemplateProps): JSX.Element {
           {invoice.billToCompany ? <Text style={styles.meta}>{invoice.billToCompany}</Text> : null}
         </View>
         <View style={[styles.section, { alignItems: "flex-end" }]}>
-          <Text style={styles.label}>Project</Text>
-          <Text>{invoice.projectName || "-"}</Text>
-          {invoice.projectDescription ? (
-            <Text style={[styles.meta, { textAlign: "right", maxWidth: 220 }]}>
-              {invoice.projectDescription}
-            </Text>
-          ) : null}
+          <Text style={styles.label}>From</Text>
+          <Text>{senderName}</Text>
+          {senderEmail ? <Text style={[styles.meta, { textAlign: "right" }]}>{senderEmail}</Text> : null}
         </View>
       </View>
+
+      {invoice.projectName || invoice.projectDescription ? (
+        <View style={{ marginTop: 10 }}>
+          <Text style={styles.label}>Project</Text>
+          <Text>{invoice.projectName || "-"}</Text>
+          {invoice.projectDescription ? <Text style={styles.meta}>{invoice.projectDescription}</Text> : null}
+        </View>
+      ) : null}
 
       <View style={styles.tableHeader}>
         <Text style={styles.desc}>Description</Text>

@@ -7,8 +7,11 @@ import { Download, ExternalLink, Mail, Pencil, Send, Trash2 } from "lucide-react
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { usePDFDownload } from "@/hooks/usePDFDownload";
 import { toast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -63,6 +66,9 @@ export default function InvoiceDetailPage(): JSX.Element {
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [customSubject, setCustomSubject] = useState("");
+  const [customMessage, setCustomMessage] = useState("");
 
   const loadInvoice = useCallback(async (): Promise<void> => {
     try {
@@ -92,6 +98,14 @@ export default function InvoiceDetailPage(): JSX.Element {
   useEffect(() => {
     void loadInvoice();
   }, [loadInvoice]);
+
+  useEffect(() => {
+    if (!invoice) return;
+    setCustomSubject(`Invoice ${invoice.invoiceNumber} from {{senderName}}`);
+    setCustomMessage(
+      "Please find attached invoice {{invoiceNumber}} for {{amountDue}} due on {{dueDate}}.\n\nIf you have any questions, feel free to reply to this email.",
+    );
+  }, [invoice]);
 
   const updateStatus = async (status: string): Promise<void> => {
     if (!invoice) return;
@@ -147,12 +161,18 @@ export default function InvoiceDetailPage(): JSX.Element {
       setIsSendingEmail(true);
       const response = await fetch(`/api/invoices/${invoice.id}/send`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customSubject,
+          customMessage,
+        }),
       });
       const payload = (await response.json()) as { success: boolean; error?: string };
       if (!response.ok || !payload.success) {
         throw new Error(payload.error || "Failed to send invoice email");
       }
       toast({ title: "Invoice emailed", description: `Sent to ${invoice.billToEmail}` });
+      setEmailDialogOpen(false);
       await loadInvoice();
     } catch (error) {
       console.error("Send invoice email failed:", error);
@@ -237,14 +257,46 @@ export default function InvoiceDetailPage(): JSX.Element {
             <Send className="mr-2 h-4 w-4" />
             Mark Sent
           </Button>
-          <Button
-            disabled={isSendingEmail}
-            variant="outline"
-            onClick={() => void sendInvoiceEmail()}
-          >
-            <Mail className="mr-2 h-4 w-4" />
-            {isSendingEmail ? "Sending..." : "Email Invoice"}
-          </Button>
+          <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={isSendingEmail} variant="outline">
+                <Mail className="mr-2 h-4 w-4" />
+                {isSendingEmail ? "Sending..." : "Email Invoice"}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl rounded-2xl">
+              <DialogHeader>
+                <DialogTitle>Compose invoice email</DialogTitle>
+                <DialogDescription>
+                  Customize subject and message before sending to {invoice.billToEmail}. Supported variables:
+                  {" "}
+                  <code>{"{{clientName}}"}</code>, <code>{"{{invoiceNumber}}"}</code>, <code>{"{{amountDue}}"}</code>, <code>{"{{dueDate}}"}</code>, <code>{"{{senderName}}"}</code>.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-ink">Subject</label>
+                  <Input value={customSubject} onChange={(event) => setCustomSubject(event.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-ink">Message</label>
+                  <Textarea
+                    className="min-h-[180px]"
+                    value={customMessage}
+                    onChange={(event) => setCustomMessage(event.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button disabled={isSendingEmail} onClick={() => void sendInvoiceEmail()}>
+                  {isSendingEmail ? "Sending..." : "Send Email"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Button onClick={() => void updateStatus("PAID")}>Mark Paid</Button>
           <Button variant="destructive" onClick={() => void deleteInvoice()}>
             <Trash2 className="mr-2 h-4 w-4" />

@@ -25,6 +25,8 @@ const styles = StyleSheet.create({
 
 export function ModernTemplate({ invoice, profile }: PDFTemplateProps): JSX.Element {
   const color = invoice.primaryColor || "#0f766e";
+  const senderName = profile?.businessName || profile?.senderName || "Your Business";
+  const senderEmail = profile?.businessEmail || profile?.senderEmail;
   const lineItems = toLineItems(invoice.lineItems);
 
   return (
@@ -32,10 +34,10 @@ export function ModernTemplate({ invoice, profile }: PDFTemplateProps): JSX.Elem
       <View style={styles.wrapper}>
         <View style={[styles.sidebar, { backgroundColor: invoice.accentColor || "#111827" }]}>
           <Text style={[styles.whiteText, { fontSize: 16, fontFamily: "Helvetica-Bold" }]}>
-            {profile?.businessName || "Your Business"}
+            {senderName}
           </Text>
           {profile?.businessAddress ? <Text style={styles.mutedSidebar}>{profile.businessAddress}</Text> : null}
-          {profile?.businessEmail ? <Text style={styles.mutedSidebar}>{profile.businessEmail}</Text> : null}
+          {senderEmail ? <Text style={styles.mutedSidebar}>{senderEmail}</Text> : null}
           {profile?.businessPhone ? <Text style={styles.mutedSidebar}>{profile.businessPhone}</Text> : null}
 
           <Text style={[styles.sectionTitle, styles.whiteText]}>Bill To</Text>
@@ -47,6 +49,8 @@ export function ModernTemplate({ invoice, profile }: PDFTemplateProps): JSX.Elem
             bankAccount={profile?.bankAccount}
             bankName={profile?.bankName}
             color="#93c5fd"
+            mobileMoneyNumber={profile?.mobileMoneyNumber}
+            mobileMoneyProvider={profile?.mobileMoneyProvider}
             paymentInstructions={invoice.paymentInstructions}
             swiftCode={profile?.swiftCode}
           />

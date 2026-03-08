@@ -3,12 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getProviders, signIn } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { AuthSplitShell } from "@/components/auth/AuthSplitShell";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
@@ -18,6 +20,8 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage(): JSX.Element {
   const router = useRouter();
+  const [oauthLoading, setOauthLoading] = useState<"google" | "github" | null>(null);
+  const [availableProviders, setAvailableProviders] = useState({ google: false, github: false });
   const {
     register,
     handleSubmit,
@@ -27,6 +31,7 @@ export default function LoginPage(): JSX.Element {
     defaultValues: {
       email: "",
       password: "",
+      remember: false,
     },
   });
 
@@ -34,6 +39,7 @@ export default function LoginPage(): JSX.Element {
     const result = await signIn("credentials", {
       email: values.email,
       password: values.password,
+      remember: values.remember ? "true" : "false",
       redirect: false,
       callbackUrl: "/",
     });
@@ -51,56 +57,106 @@ export default function LoginPage(): JSX.Element {
     router.refresh();
   };
 
+  const continueWithProvider = async (provider: "google" | "github"): Promise<void> => {
+    if (!availableProviders[provider]) {
+      toast({
+        variant: "destructive",
+        title: `${provider === "google" ? "Google" : "GitHub"} sign-in unavailable`,
+        description: "Please use email/password for now.",
+      });
+      return;
+    }
+    setOauthLoading(provider);
+    await signIn(provider, { callbackUrl: "/" });
+  };
+
+  useEffect(() => {
+    const loadProviders = async (): Promise<void> => {
+      const providers = await getProviders();
+      setAvailableProviders({
+        google: Boolean(providers?.google),
+        github: Boolean(providers?.github),
+      });
+    };
+    void loadProviders();
+  }, []);
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-[#fff7eb] px-4 py-8 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      <Card className="w-full max-w-md rounded-2xl border-surface-border shadow-md">
-        <CardHeader>
-          <div className="mb-4 flex items-center gap-3">
-            <Image
-              src="/LOGO.png"
-              alt="LedgerBloom logo"
-              width={44}
-              height={44}
-              className="rounded-xl"
-              priority
-            />
-            <p className="text-sm font-medium uppercase tracking-[0.12em] text-ink-muted">LedgerBloom</p>
+    <AuthSplitShell
+      subtitle="You can get everything you want if you work hard, trust the process, and stick to the plan."
+      title="Get Everything You Want"
+    >
+      <div className="w-full">
+        <div className="mb-12 flex items-center justify-center gap-3 lg:justify-start">
+          <p className="text-xl font-semibold text-ink">LedgerBloom</p>
+        </div>
+        <div className="rounded-xl border border-surface-border bg-white/90 p-6 shadow-sm dark:bg-slate-950/80 sm:p-8">
+          <div className="mb-7">
+            <div className="mb-4 flex items-center gap-3">
+              <Image
+                alt="LedgerBloom logo"
+                className="rounded-xl"
+                height={40}
+                priority
+                src="/LOGO.png"
+                width={40}
+              />
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-ink-muted">LedgerBloom</p>
+            </div>
+            <h1 className="text-[2.1rem] font-semibold leading-none text-slate-900 dark:text-slate-100">
+              Welcome Back
+            </h1>
+            <p className="mt-3 text-sm text-ink-muted">
+              Enter your email and password to access your account.
+            </p>
           </div>
-          <CardTitle className="text-2xl font-semibold text-ink">
-            Sign in to LedgerBloom
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" {...register("email")} />
-              {errors.email && (
-                <p className="text-xs text-red-600">{errors.email.message}</p>
-              )}
+              {errors.email ? <p className="text-xs text-red-600">{errors.email.message}</p> : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
+              {errors.password ? (
                 <p className="text-xs text-red-600">{errors.password.message}</p>
-              )}
+              ) : null}
             </div>
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-xs text-ink-muted">
-                <input type="checkbox" className="h-4 w-4 rounded border-slate-300" />
+                <input
+                  className="h-4 w-4 rounded border-surface-border accent-brand-600"
+                  type="checkbox"
+                  {...register("remember")}
+                />
                 Remember me
               </label>
-              <Link className="text-xs text-brand-600 hover:underline" href="/register">
+              <Link className="text-xs text-brand-700 hover:underline" href="/register">
                 Create account
               </Link>
             </div>
-            <Button className="w-full rounded-xl" disabled={isSubmitting} type="submit">
-              {isSubmitting ? "Signing in..." : "Sign in"}
+            <Button className="h-11 w-full rounded-lg bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200" disabled={isSubmitting || oauthLoading !== null} type="submit">
+              {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </main>
+          <div className="mt-4">
+            <SocialAuthButtons
+              githubAvailable={availableProviders.github}
+              googleAvailable={availableProviders.google}
+              isLoading={oauthLoading}
+              onGithub={() => void continueWithProvider("github")}
+              onGoogle={() => void continueWithProvider("google")}
+            />
+          </div>
+          <p className="mt-6 text-center text-sm text-ink-muted">
+            Don&apos;t have an account?{" "}
+            <Link className="font-semibold text-slate-900 hover:underline dark:text-slate-100" href="/register">
+              Sign Up
+            </Link>
+          </p>
+        </div>
+      </div>
+    </AuthSplitShell>
   );
 }

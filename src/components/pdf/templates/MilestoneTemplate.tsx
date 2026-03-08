@@ -29,8 +29,10 @@ function milestoneStatus(status: "pending" | "completed" | "invoiced"): string {
   return "PENDING";
 }
 
-export function MilestoneTemplate({ invoice }: PDFTemplateProps): JSX.Element {
+export function MilestoneTemplate({ invoice, profile }: PDFTemplateProps): JSX.Element {
   const color = invoice.primaryColor || "#0f766e";
+  const senderName = profile?.businessName || profile?.senderName || "Your Business";
+  const senderEmail = profile?.businessEmail || profile?.senderEmail;
   const milestones = toMilestones(invoice.milestones || []);
   const lineItems = toLineItems(invoice.lineItems);
 
@@ -43,6 +45,10 @@ export function MilestoneTemplate({ invoice }: PDFTemplateProps): JSX.Element {
       </Text>
       <Text style={[styles.meta, { marginTop: 8 }]}>
         Bill To: {invoice.billToName} ({invoice.billToEmail})
+      </Text>
+      <Text style={styles.meta}>
+        From: {senderName}
+        {senderEmail ? ` (${senderEmail})` : ""}
       </Text>
 
       {milestones.length ? (

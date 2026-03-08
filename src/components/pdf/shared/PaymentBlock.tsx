@@ -18,15 +18,19 @@ export function PaymentBlock({
   bankName,
   bankAccount,
   swiftCode,
+  mobileMoneyProvider,
+  mobileMoneyNumber,
   paymentInstructions,
 }: {
   color: string;
   bankName?: string | null;
   bankAccount?: string | null;
   swiftCode?: string | null;
+  mobileMoneyProvider?: string | null;
+  mobileMoneyNumber?: string | null;
   paymentInstructions?: string | null;
 }): JSX.Element | null {
-  if (!bankName && !bankAccount && !swiftCode && !paymentInstructions) {
+  if (!bankName && !bankAccount && !swiftCode && !mobileMoneyProvider && !mobileMoneyNumber && !paymentInstructions) {
     return null;
   }
 
@@ -36,6 +40,8 @@ export function PaymentBlock({
       {bankName ? <Text style={styles.detail}>Bank: {bankName}</Text> : null}
       {bankAccount ? <Text style={styles.detail}>Account: {bankAccount}</Text> : null}
       {swiftCode ? <Text style={styles.detail}>SWIFT: {swiftCode}</Text> : null}
+      {mobileMoneyProvider ? <Text style={styles.detail}>Mobile money: {mobileMoneyProvider}</Text> : null}
+      {mobileMoneyNumber ? <Text style={styles.detail}>Mobile number: {mobileMoneyNumber}</Text> : null}
       {paymentInstructions ? <Text style={styles.detail}>{paymentInstructions}</Text> : null}
     </View>
   );

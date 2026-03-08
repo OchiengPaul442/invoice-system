@@ -52,12 +52,17 @@ export interface PDFInvoice {
 }
 
 export interface PDFProfile {
+  senderName?: string | null;
+  senderEmail?: string | null;
+  isFreelancer?: boolean | null;
   businessName?: string | null;
   businessAddress?: string | null;
   businessCity?: string | null;
   businessCountry?: string | null;
   businessEmail?: string | null;
   businessPhone?: string | null;
+  mobileMoneyProvider?: string | null;
+  mobileMoneyNumber?: string | null;
   taxId?: string | null;
   logoPath?: string | null;
   primaryColor?: string | null;

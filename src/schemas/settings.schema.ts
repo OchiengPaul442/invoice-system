@@ -15,6 +15,7 @@ export const registerSchema = z
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  remember: z.boolean().optional(),
 });
 
 export const profileSchema = z.object({
@@ -27,6 +28,9 @@ export const profileSchema = z.object({
   businessPhone: z.string().optional(),
   businessEmail: z.string().email().optional().or(z.literal("")),
   businessWebsite: z.string().url().optional().or(z.literal("")),
+  isFreelancer: z.boolean().optional(),
+  mobileMoneyProvider: z.string().optional(),
+  mobileMoneyNumber: z.string().optional(),
   taxId: z.string().optional(),
   currency: z.string().default("UGX"),
   logoPath: z.string().optional().nullable(),

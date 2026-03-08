@@ -41,7 +41,9 @@ export default function SettingsPage(): JSX.Element {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold text-ink">Settings</h1>
-        <p className="text-sm text-ink-muted">Manage brand, defaults, and payment-ready profile details.</p>
+        <p className="text-sm text-ink-muted">
+          Manage sender profile, invoice defaults, and payment details for both businesses and freelancers.
+        </p>
       </div>
 
       {isLoading ? (
@@ -56,7 +58,7 @@ export default function SettingsPage(): JSX.Element {
         <Tabs defaultValue="business" className="space-y-4">
           <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl p-1">
             <TabsTrigger className="rounded-lg py-2.5" value="business">
-              Business Profile
+              Sender Profile
             </TabsTrigger>
             <TabsTrigger className="rounded-lg py-2.5" value="invoice">
               Invoice Defaults
@@ -66,10 +68,15 @@ export default function SettingsPage(): JSX.Element {
           <TabsContent value="business">
             <Card>
               <CardHeader>
-                <CardTitle>Business Profile</CardTitle>
+                <CardTitle>Sender Profile</CardTitle>
               </CardHeader>
               <CardContent>
-                <BusinessForm initialValues={payload?.profile || undefined} onSaved={load} />
+                <BusinessForm
+                  accountEmail={payload?.user.email}
+                  accountName={payload?.user.name}
+                  initialValues={payload?.profile || undefined}
+                  onSaved={load}
+                />
               </CardContent>
             </Card>
           </TabsContent>

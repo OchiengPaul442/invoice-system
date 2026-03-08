@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { ClientCard } from "@/components/client/ClientCard";
 import { ClientForm } from "@/components/client/ClientForm";
 import { Button } from "@/components/ui/button";
@@ -23,13 +23,19 @@ interface ClientItem {
 export default function ClientsPage(): JSX.Element {
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [search, setSearch] = useState("");
+  const [deferredSearch, setDeferredSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDeferredSearch(search.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
   const load = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/clients?search=${encodeURIComponent(search)}`, {
+      const response = await fetch(`/api/clients?search=${encodeURIComponent(deferredSearch)}`, {
         cache: "no-store",
       });
       const payload = (await response.json()) as { success: boolean; data?: ClientItem[] };
@@ -39,7 +45,7 @@ export default function ClientsPage(): JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [search]);
+  }, [deferredSearch]);
 
   useEffect(() => {
     void load();
@@ -71,13 +77,17 @@ export default function ClientsPage(): JSX.Element {
         </Card>
       ) : null}
 
-      <Card>
+      <Card className="bg-card/90 backdrop-blur">
         <CardContent className="pt-6">
-          <Input
-            placeholder="Search clients by name, email, or company..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
+            <Input
+              className="pl-9"
+              placeholder="Search clients by name, email, or company..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -94,7 +104,7 @@ export default function ClientsPage(): JSX.Element {
           ))}
         </div>
       ) : !clients.length ? (
-        <div className="rounded-md border border-dashed border-surface-border bg-white p-10 text-center">
+        <div className="rounded-md border border-dashed border-surface-border bg-card p-10 text-center">
           <h2 className="text-lg font-semibold text-ink">No clients yet</h2>
           <p className="mt-1 text-sm text-ink-muted">
             Add your first client to start creating invoices.

@@ -41,6 +41,9 @@ model UserProfile {
   businessPhone   String?
   businessEmail   String?
   businessWebsite String?
+  isFreelancer    Boolean  @default(false)
+  mobileMoneyProvider String?
+  mobileMoneyNumber   String?
   taxId           String?
   currency        String   @default("UGX")
   logoPath        String?

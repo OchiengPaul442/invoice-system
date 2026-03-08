@@ -42,6 +42,8 @@ const styles = StyleSheet.create({
 
 export function ClassicTemplate({ invoice, profile }: PDFTemplateProps): JSX.Element {
   const color = invoice.primaryColor || profile?.primaryColor || "#0f766e";
+  const senderName = profile?.businessName || profile?.senderName || "Your Business";
+  const senderEmail = profile?.businessEmail || profile?.senderEmail;
   const lineItems = toLineItems(invoice.lineItems);
 
   return (
@@ -52,7 +54,7 @@ export function ClassicTemplate({ invoice, profile }: PDFTemplateProps): JSX.Ele
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image style={styles.logo} src={`${process.env.NEXT_PUBLIC_APP_URL}${profile.logoPath}`} />
           ) : null}
-          <Text style={styles.businessName}>{profile?.businessName || "Your Business"}</Text>
+          <Text style={styles.businessName}>{senderName}</Text>
           {profile?.businessAddress ? <Text style={styles.businessDetail}>{profile.businessAddress}</Text> : null}
           {profile?.businessCity ? (
             <Text style={styles.businessDetail}>
@@ -60,7 +62,7 @@ export function ClassicTemplate({ invoice, profile }: PDFTemplateProps): JSX.Ele
               {profile.businessCountry ? `, ${profile.businessCountry}` : ""}
             </Text>
           ) : null}
-          {profile?.businessEmail ? <Text style={styles.businessDetail}>{profile.businessEmail}</Text> : null}
+          {senderEmail ? <Text style={styles.businessDetail}>{senderEmail}</Text> : null}
           {profile?.businessPhone ? <Text style={styles.businessDetail}>{profile.businessPhone}</Text> : null}
         </View>
         <View style={{ alignItems: "flex-end" }}>
@@ -136,6 +138,8 @@ export function ClassicTemplate({ invoice, profile }: PDFTemplateProps): JSX.Ele
         bankAccount={profile?.bankAccount}
         bankName={profile?.bankName}
         color={color}
+        mobileMoneyNumber={profile?.mobileMoneyNumber}
+        mobileMoneyProvider={profile?.mobileMoneyProvider}
         paymentInstructions={invoice.paymentInstructions || profile?.paymentNotes}
         swiftCode={profile?.swiftCode}
       />

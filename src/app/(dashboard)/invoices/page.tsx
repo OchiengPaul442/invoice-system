@@ -43,11 +43,13 @@ export default async function InvoicesPage({
         userId: session.user.id,
         ...(normalizedStatus ? { status: normalizedStatus } : {}),
         ...(clientId ? { clientId } : {}),
-        ...(search
+      ...(search
           ? {
               OR: [
                 { invoiceNumber: { contains: search, mode: "insensitive" } },
                 { billToName: { contains: search, mode: "insensitive" } },
+                { billToEmail: { contains: search, mode: "insensitive" } },
+                { billToCompany: { contains: search, mode: "insensitive" } },
                 { projectName: { contains: search, mode: "insensitive" } },
               ],
             }
@@ -72,18 +74,18 @@ export default async function InvoicesPage({
         </Button>
       </div>
 
-      <form className="grid gap-3 rounded-md border border-surface-border bg-white p-3 md:grid-cols-[1.4fr_1fr_1fr_auto]">
+      <form className="grid gap-3 rounded-xl border border-surface-border bg-card/90 p-3 backdrop-blur md:grid-cols-[1.5fr_1fr_1fr_auto]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
           <Input
             className="pl-9"
             defaultValue={search}
             name="search"
-            placeholder="Search invoice #, client, project..."
+            placeholder="Search invoice #, client, email, company, project..."
           />
         </div>
         <select
-          className="h-10 rounded-md border border-surface-border bg-white px-3 text-sm"
+          className="h-10 rounded-xl border border-surface-border bg-background px-3 text-sm text-foreground outline-none ring-ring transition focus:ring-1"
           defaultValue={status}
           name="status"
         >
@@ -95,7 +97,7 @@ export default async function InvoicesPage({
           <option value="CANCELLED">Cancelled</option>
         </select>
         <select
-          className="h-10 rounded-md border border-surface-border bg-white px-3 text-sm"
+          className="h-10 rounded-xl border border-surface-border bg-background px-3 text-sm text-foreground outline-none ring-ring transition focus:ring-1"
           defaultValue={clientId}
           name="clientId"
         >
@@ -112,7 +114,7 @@ export default async function InvoicesPage({
       </form>
 
       {!invoices.length ? (
-        <div className="rounded-md border border-dashed border-surface-border bg-white p-10 text-center">
+        <div className="rounded-xl border border-dashed border-surface-border bg-card p-10 text-center">
           <h2 className="text-lg font-semibold text-ink">No invoices yet</h2>
           <p className="mt-1 text-sm text-ink-muted">
             Create your first invoice to get started.

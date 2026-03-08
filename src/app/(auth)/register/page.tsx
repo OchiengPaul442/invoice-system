@@ -3,12 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getProviders, signIn } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { AuthSplitShell } from "@/components/auth/AuthSplitShell";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
@@ -18,6 +20,8 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage(): JSX.Element {
   const router = useRouter();
+  const [oauthLoading, setOauthLoading] = useState<"google" | "github" | null>(null);
+  const [availableProviders, setAvailableProviders] = useState({ google: false, github: false });
   const {
     register,
     handleSubmit,
@@ -56,6 +60,7 @@ export default function RegisterPage(): JSX.Element {
       const signInResult = await signIn("credentials", {
         email: values.email,
         password: values.password,
+        remember: "true",
         redirect: false,
       });
 
@@ -81,73 +86,104 @@ export default function RegisterPage(): JSX.Element {
     }
   };
 
+  const continueWithProvider = async (provider: "google" | "github"): Promise<void> => {
+    if (!availableProviders[provider]) {
+      toast({
+        variant: "destructive",
+        title: `${provider === "google" ? "Google" : "GitHub"} sign-in unavailable`,
+        description: "Please use email/password for now.",
+      });
+      return;
+    }
+    setOauthLoading(provider);
+    await signIn(provider, { callbackUrl: "/settings" });
+  };
+
+  useEffect(() => {
+    const loadProviders = async (): Promise<void> => {
+      const providers = await getProviders();
+      setAvailableProviders({
+        google: Boolean(providers?.google),
+        github: Boolean(providers?.github),
+      });
+    };
+    void loadProviders();
+  }, []);
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-[#fff7eb] px-4 py-8 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      <Card className="w-full max-w-md rounded-2xl border-surface-border shadow-md">
-        <CardHeader>
-          <div className="mb-4 flex items-center gap-3">
-            <Image
-              src="/LOGO.png"
-              alt="LedgerBloom logo"
-              width={44}
-              height={44}
-              className="rounded-xl"
-              priority
-            />
-            <p className="text-sm font-medium uppercase tracking-[0.12em] text-ink-muted">LedgerBloom</p>
+    <AuthSplitShell
+      subtitle="Set up your workspace and start sending clean, professional invoices in minutes."
+      title="Build Revenue With Better Billing"
+    >
+      <div className="w-full">
+        <div className="mb-12 flex items-center justify-center gap-3 lg:justify-start">
+          <p className="text-xl font-semibold text-ink">LedgerBloom</p>
+        </div>
+        <div className="rounded-xl border border-surface-border bg-white/90 p-6 shadow-sm dark:bg-slate-950/80 sm:p-8">
+          <div className="mb-7">
+            <div className="mb-4 flex items-center gap-3">
+              <Image
+                alt="LedgerBloom logo"
+                className="rounded-xl"
+                height={40}
+                priority
+                src="/LOGO.png"
+                width={40}
+              />
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-ink-muted">LedgerBloom</p>
+            </div>
+            <h1 className="text-[2.1rem] font-semibold leading-none text-slate-900 dark:text-slate-100">
+              Create Account
+            </h1>
+            <p className="mt-3 text-sm text-ink-muted">
+              Enter your details to open your billing workspace.
+            </p>
           </div>
-          <CardTitle className="text-2xl font-semibold text-ink">
-            Create your LedgerBloom account
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Full Name</Label>
               <Input id="name" {...register("name")} />
-              {errors.name && (
-                <p className="text-xs text-red-600">{errors.name.message}</p>
-              )}
+              {errors.name ? <p className="text-xs text-red-600">{errors.name.message}</p> : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" {...register("email")} />
-              {errors.email && (
-                <p className="text-xs text-red-600">{errors.email.message}</p>
-              )}
+              {errors.email ? <p className="text-xs text-red-600">{errors.email.message}</p> : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
+              {errors.password ? (
                 <p className="text-xs text-red-600">{errors.password.message}</p>
-              )}
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                {...register("confirmPassword")}
-              />
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-600">
-                  {errors.confirmPassword.message}
-                </p>
-              )}
+              <Input id="confirmPassword" type="password" {...register("confirmPassword")} />
+              {errors.confirmPassword ? (
+                <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
+              ) : null}
             </div>
-            <div className="text-xs text-ink-muted">
-              Already have an account?{" "}
-              <Link className="text-brand-600 hover:underline" href="/login">
-                Sign in
-              </Link>
-            </div>
-            <Button className="w-full rounded-xl" disabled={isSubmitting} type="submit">
+            <Button className="h-11 w-full rounded-lg bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200" disabled={isSubmitting || oauthLoading !== null} type="submit">
               {isSubmitting ? "Creating account..." : "Create account"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </main>
+          <div className="my-4 h-px bg-surface-border" />
+          <SocialAuthButtons
+            githubAvailable={availableProviders.github}
+            googleAvailable={availableProviders.google}
+            isLoading={oauthLoading}
+            onGithub={() => void continueWithProvider("github")}
+            onGoogle={() => void continueWithProvider("google")}
+          />
+          <p className="mt-6 text-center text-sm text-ink-muted">
+            Already have an account?{" "}
+            <Link className="font-semibold text-slate-900 hover:underline dark:text-slate-100" href="/login">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </AuthSplitShell>
   );
 }
