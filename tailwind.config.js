@@ -20,14 +20,14 @@ module.exports = {
           900: "#083A35",
         },
         surface: {
-          DEFAULT: "#FFFFFF",
-          muted: "#F7F8F6",
-          border: "#DEE4DE",
+          DEFAULT: "hsl(var(--surface))",
+          muted: "hsl(var(--surface-muted))",
+          border: "hsl(var(--surface-border))",
         },
         ink: {
-          DEFAULT: "#1F2937",
-          muted: "#5F6C74",
-          subtle: "#88949A",
+          DEFAULT: "hsl(var(--ink))",
+          muted: "hsl(var(--ink-muted))",
+          subtle: "hsl(var(--ink-subtle))",
         },
         status: {
           draft: "#94A3B8",

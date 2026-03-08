@@ -78,3 +78,42 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 }
+
+export async function DELETE(): Promise<NextResponse> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 },
+    );
+  }
+
+  try {
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { logoPath: true },
+    });
+
+    if (profile?.logoPath) {
+      try {
+        await unlink(path.join(process.cwd(), "public", profile.logoPath));
+      } catch {
+        // Ignore if old file doesn't exist.
+      }
+    }
+
+    await prisma.userProfile.upsert({
+      where: { userId: session.user.id },
+      update: { logoPath: null },
+      create: { userId: session.user.id, logoPath: null },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Logo delete failed:", error);
+    return NextResponse.json(
+      { success: false, error: "Delete failed" },
+      { status: 500 },
+    );
+  }
+}

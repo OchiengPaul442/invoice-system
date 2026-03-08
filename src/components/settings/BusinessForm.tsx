@@ -123,6 +123,7 @@ export function BusinessForm({
       <LogoUpload
         value={values.logoPath}
         onUploaded={(logoPath) => setValues((current) => ({ ...current, logoPath }))}
+        onCleared={() => setValues((current) => ({ ...current, logoPath: null }))}
       />
       <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-1">

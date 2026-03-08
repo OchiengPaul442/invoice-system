@@ -54,13 +54,13 @@ export function Sidebar(): JSX.Element {
   };
 
   return (
-    <aside className="sticky top-0 hidden h-[100dvh] w-72 shrink-0 flex-col border-r border-surface-border bg-white/90 backdrop-blur md:flex">
+    <aside className="sticky top-0 hidden h-[100dvh] w-72 shrink-0 flex-col border-r border-surface-border bg-white/90 backdrop-blur dark:bg-slate-950/85 md:flex">
       <div className="border-b border-surface-border px-6 py-5">
         <Link href="/" className="inline-flex items-center gap-3">
           <div className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
             <Image
               src="/LOGO.png"
-              alt="InvoiceFlow logo"
+              alt="LedgerBloom logo"
               width={36}
               height={36}
               className="h-full w-full object-cover"
@@ -68,7 +68,7 @@ export function Sidebar(): JSX.Element {
             />
           </div>
           <div>
-            <p className="text-base font-bold text-ink">InvoiceFlow</p>
+            <p className="text-base font-bold text-ink">LedgerBloom</p>
             <p className="text-xs text-ink-muted">Billing workspace</p>
           </div>
         </Link>
@@ -97,7 +97,7 @@ export function Sidebar(): JSX.Element {
       </nav>
 
       <div className="border-t border-surface-border p-3">
-        <div className="mb-3 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
+        <div className="mb-3 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-900/90">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
             {initials}
           </div>
@@ -118,7 +118,7 @@ export function Sidebar(): JSX.Element {
             <DialogHeader>
               <DialogTitle>Confirm logout</DialogTitle>
               <DialogDescription>
-                You will be signed out of InvoiceFlow on this device.
+                You will be signed out of LedgerBloom on this device.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

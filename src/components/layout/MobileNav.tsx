@@ -17,7 +17,7 @@ export function MobileNav(): JSX.Element {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-surface-border bg-white/95 px-2 pb-1 pt-1 backdrop-blur md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-surface-border bg-white/95 px-2 pb-1 pt-1 backdrop-blur dark:bg-slate-950/90 md:hidden">
       <ul className="grid grid-cols-5">
         {items.map((item) => {
           const Icon = item.icon;

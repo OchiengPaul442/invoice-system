@@ -5,6 +5,7 @@ import { useState } from "react";
 export function usePDFDownload(): {
   isDownloading: boolean;
   downloadPDF: (invoiceId: string, invoiceNumber: string) => Promise<void>;
+  openPDFInBrowser: (invoiceId: string, invoiceNumber: string) => void;
 } {
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -14,25 +15,49 @@ export function usePDFDownload(): {
   ): Promise<void> => {
     setIsDownloading(true);
     try {
-      const params = new URLSearchParams({
-        download: "0",
-        filename: invoiceNumber,
-      });
-      const response = await fetch(`/api/pdf/${invoiceId}?${params.toString()}`, {
+      const response = await fetch(`/api/pdf/${invoiceId}`, {
+        method: "POST",
         cache: "no-store",
-        headers: { Accept: "application/pdf" },
+        headers: { "Content-Type": "application/json", Accept: "application/pdf" },
+        body: JSON.stringify({
+          download: true,
+          fileName: invoiceNumber,
+        }),
       });
+
+      if (response.status === 204) {
+        // Some browser extensions intercept PDF requests. Fallback to browser-native download.
+        const directUrl = `/api/pdf/${invoiceId}?download=1&filename=${encodeURIComponent(invoiceNumber)}`;
+        const directLink = document.createElement("a");
+        directLink.href = directUrl;
+        directLink.rel = "noopener";
+        document.body.appendChild(directLink);
+        directLink.click();
+        document.body.removeChild(directLink);
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error(`PDF request failed (${response.status})`);
+        let reason = `PDF request failed (${response.status})`;
+        try {
+          const text = await response.text();
+          if (text) reason = text;
+        } catch {
+          // ignore parse failure
+        }
+        throw new Error(reason);
       }
 
       const contentType = response.headers.get("content-type") || "";
-      const isPdfResponse =
-        contentType.includes("application/pdf") ||
-        contentType.includes("application/octet-stream");
-
-      if (!isPdfResponse) {
-        throw new Error("Unexpected file response");
+      if (!contentType.includes("application/pdf")) {
+        const directUrl = `/api/pdf/${invoiceId}?download=1&filename=${encodeURIComponent(invoiceNumber)}`;
+        const directLink = document.createElement("a");
+        directLink.href = directUrl;
+        directLink.rel = "noopener";
+        document.body.appendChild(directLink);
+        directLink.click();
+        document.body.removeChild(directLink);
+        return;
       }
 
       const blob = await response.blob();
@@ -57,5 +82,13 @@ export function usePDFDownload(): {
     }
   };
 
-  return { downloadPDF, isDownloading };
+  const openPDFInBrowser = (invoiceId: string, invoiceNumber: string): void => {
+    const params = new URLSearchParams({
+      download: "0",
+      filename: invoiceNumber,
+    });
+    window.open(`/api/pdf/${invoiceId}?${params.toString()}`, "_blank", "noopener,noreferrer");
+  };
+
+  return { downloadPDF, isDownloading, openPDFInBrowser };
 }

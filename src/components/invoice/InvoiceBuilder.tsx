@@ -87,6 +87,9 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
         const payload = (await response.json()) as {
           success: boolean;
           data?: {
+            profile?: {
+              logoPath?: string | null;
+            } | null;
             invoiceSettings?: {
               defaultTemplate?: TemplateType;
               defaultPaymentTerms?: number;
@@ -119,6 +122,10 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
         }
         if (typeof defaults.defaultPaymentTerms === "number") {
           setField("paymentTerms", `Net ${defaults.defaultPaymentTerms}`);
+        }
+
+        if (payload.data.profile) {
+          setField("showLogo", Boolean(payload.data.profile.logoPath));
         }
       } catch (error) {
         console.error("Load invoice defaults failed:", error);
@@ -444,6 +451,14 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
                 <p className="text-xs text-ink-muted">{template.description}</p>
               </button>
             ))}
+            <label className="md:col-span-2 mt-2 inline-flex items-center gap-2 rounded-md border border-surface-border bg-slate-50 px-3 py-2 text-sm text-ink-muted">
+              <input
+                checked={store.showLogo}
+                onChange={(event) => setField("showLogo", event.target.checked)}
+                type="checkbox"
+              />
+              Show business logo on this invoice
+            </label>
           </CardContent>
         </Card>
 

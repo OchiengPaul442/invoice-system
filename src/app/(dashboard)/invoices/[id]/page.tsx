@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Download, Mail, Pencil, Send, Trash2 } from "lucide-react";
+import { Download, ExternalLink, Mail, Pencil, Send, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +59,7 @@ interface InvoiceDetail {
 export default function InvoiceDetailPage(): JSX.Element {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { downloadPDF, isDownloading } = usePDFDownload();
+  const { downloadPDF, isDownloading, openPDFInBrowser } = usePDFDownload();
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -209,13 +209,13 @@ export default function InvoiceDetailPage(): JSX.Element {
             <Download className="mr-2 h-4 w-4" />
             {isDownloading ? "Downloading..." : "Download PDF"}
           </Button>
-          {invoice.pdfUrl ? (
-            <Button asChild variant="outline">
-              <a href={invoice.pdfUrl} rel="noreferrer" target="_blank">
-                Open Shared PDF
-              </a>
-            </Button>
-          ) : null}
+          <Button
+            variant="outline"
+            onClick={() => openPDFInBrowser(invoice.id, invoice.invoiceNumber)}
+          >
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Open PDF
+          </Button>
           <Select value={invoice.status} onValueChange={(value) => void updateStatus(value)}>
             <SelectTrigger className="w-[160px]">
               <SelectValue />

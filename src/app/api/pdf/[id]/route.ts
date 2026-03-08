@@ -18,6 +18,69 @@ function hasPdfSignature(bytes: Uint8Array): boolean {
   );
 }
 
+interface PdfOptions {
+  download: boolean;
+  fileName?: string | null;
+}
+
+async function buildPdfResponse({
+  invoiceId,
+  userId,
+  download,
+  fileName,
+}: {
+  invoiceId: string;
+  userId: string;
+  download: boolean;
+  fileName?: string | null;
+}): Promise<NextResponse> {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, userId },
+    select: { id: true, invoiceNumber: true, pdfUrl: true },
+  });
+
+  if (!invoice) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
+  const safeFileName = fileName || invoice.invoiceNumber;
+  const dispositionType = download ? "attachment" : "inline";
+
+  if (invoice.pdfUrl) {
+    const cloudinaryResponse = await fetch(invoice.pdfUrl, { cache: "no-store" });
+    if (cloudinaryResponse.ok) {
+      const bytes = new Uint8Array(await cloudinaryResponse.arrayBuffer());
+      if (
+        isPdfContentType(cloudinaryResponse.headers.get("content-type")) &&
+        hasPdfSignature(bytes)
+      ) {
+        return new NextResponse(bytes, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `${dispositionType}; filename="${safeFileName}.pdf"`,
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
+      }
+    }
+  }
+
+  const { buffer, invoiceNumber } = await generateInvoicePdfBuffer(invoice.id, userId);
+  const bytes = new Uint8Array(buffer);
+
+  return new NextResponse(bytes, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `${dispositionType}; filename="${safeFileName || invoiceNumber}.pdf"`,
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } },
@@ -28,52 +91,40 @@ export async function GET(
   }
 
   try {
-    const invoice = await prisma.invoice.findFirst({
-      where: { id: params.id, userId: session.user.id },
-      select: { id: true, invoiceNumber: true, pdfUrl: true },
-    });
-
-    if (!invoice) {
-      return new NextResponse("Not Found", { status: 404 });
-    }
-
     const { searchParams } = new URL(req.url);
-    const download = searchParams.get("download") === "1";
-    const fileName = searchParams.get("filename") || invoice.invoiceNumber;
-    const dispositionType = download ? "attachment" : "inline";
+    const options: PdfOptions = {
+      download: searchParams.get("download") === "1",
+      fileName: searchParams.get("filename"),
+    };
 
-    if (invoice.pdfUrl) {
-      const cloudinaryResponse = await fetch(invoice.pdfUrl, { cache: "no-store" });
-      if (cloudinaryResponse.ok) {
-        const bytes = new Uint8Array(await cloudinaryResponse.arrayBuffer());
-        if (
-          isPdfContentType(cloudinaryResponse.headers.get("content-type")) &&
-          hasPdfSignature(bytes)
-        ) {
-          return new NextResponse(bytes, {
-            status: 200,
-            headers: {
-              "Content-Type": "application/pdf",
-              "Content-Disposition": `${dispositionType}; filename="${fileName}.pdf"`,
-              "Cache-Control": "no-store, no-cache, must-revalidate",
-              "X-Content-Type-Options": "nosniff",
-            },
-          });
-        }
-      }
-    }
+    return buildPdfResponse({
+      invoiceId: params.id,
+      userId: session.user.id,
+      ...options,
+    });
+  } catch (error) {
+    console.error("PDF generation failed:", error);
+    return new NextResponse("PDF generation failed", { status: 500 });
+  }
+}
 
-    const { buffer, invoiceNumber } = await generateInvoicePdfBuffer(invoice.id, session.user.id);
-    const bytes = new Uint8Array(buffer);
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } },
+): Promise<NextResponse> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
 
-    return new NextResponse(bytes, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `${dispositionType}; filename="${fileName || invoiceNumber}.pdf"`,
-        "Cache-Control": "no-store, no-cache, must-revalidate",
-        "X-Content-Type-Options": "nosniff",
-      },
+  try {
+    const body = (await req.json().catch(() => ({}))) as Partial<PdfOptions>;
+
+    return buildPdfResponse({
+      invoiceId: params.id,
+      userId: session.user.id,
+      download: body.download ?? true,
+      fileName: body.fileName ?? null,
     });
   } catch (error) {
     console.error("PDF generation failed:", error);

@@ -29,6 +29,7 @@ export const profileSchema = z.object({
   businessWebsite: z.string().url().optional().or(z.literal("")),
   taxId: z.string().optional(),
   currency: z.string().default("UGX"),
+  logoPath: z.string().optional().nullable(),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   bankName: z.string().optional(),

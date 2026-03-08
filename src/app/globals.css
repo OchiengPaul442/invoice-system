@@ -9,6 +9,12 @@ body {
 
 @layer base {
   :root {
+    --surface: 0 0% 100%;
+    --surface-muted: 150 14% 97%;
+    --surface-border: 155 16% 89%;
+    --ink: 215 28% 17%;
+    --ink-muted: 207 10% 41%;
+    --ink-subtle: 204 8% 58%;
     --background: 0 0% 100%;
     --foreground: 215 28% 17%;
     --card: 0 0% 100%;
@@ -36,30 +42,36 @@ body {
     --radius: 0.5rem;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --surface: 220 23% 12%;
+    --surface-muted: 220 23% 10%;
+    --surface-border: 215 18% 22%;
+    --ink: 210 40% 96%;
+    --ink-muted: 214 22% 73%;
+    --ink-subtle: 214 14% 58%;
+    --background: 220 23% 10%;
+    --foreground: 210 40% 96%;
+    --card: 220 22% 12%;
+    --card-foreground: 210 40% 96%;
+    --popover: 220 22% 12%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 174 77% 40%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 216 19% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 216 19% 16%;
+    --muted-foreground: 214 18% 72%;
+    --accent: 216 19% 18%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 67% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --border: 215 18% 22%;
+    --input: 215 18% 22%;
+    --ring: 174 77% 40%;
+    --chart-1: 173 58% 44%;
+    --chart-2: 197 52% 55%;
+    --chart-3: 43 74% 61%;
+    --chart-4: 27 87% 63%;
+    --chart-5: 10 76% 58%;
   }
 
   * {
@@ -73,6 +85,12 @@ body {
       radial-gradient(circle at 12% 20%, rgba(15, 118, 110, 0.08), transparent 38%),
       radial-gradient(circle at 84% 0%, rgba(217, 119, 6, 0.1), transparent 36%);
     background-attachment: fixed;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at 15% 18%, rgba(15, 118, 110, 0.24), transparent 34%),
+      radial-gradient(circle at 85% 0%, rgba(6, 78, 59, 0.35), transparent 40%);
   }
 
   h1,

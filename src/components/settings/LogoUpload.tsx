@@ -9,9 +9,11 @@ import { toast } from "@/hooks/use-toast";
 export function LogoUpload({
   value,
   onUploaded,
+  onCleared,
 }: {
   value?: string | null;
   onUploaded: (logoPath: string) => void;
+  onCleared: () => void;
 }): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -44,6 +46,26 @@ export function LogoUpload({
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const clearLogo = async (): Promise<void> => {
+    try {
+      const response = await fetch("/api/upload/logo", { method: "DELETE" });
+      const payload = (await response.json()) as { success: boolean; error?: string };
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Failed to remove logo");
+      }
+
+      onCleared();
+      toast({ title: "Logo removed" });
+    } catch (error) {
+      console.error("Logo remove failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Remove failed",
+        description: error instanceof Error ? error.message : "Unable to remove logo",
+      });
     }
   };
 
@@ -91,9 +113,16 @@ export function LogoUpload({
         </div>
       ) : null}
       {isUploading ? <p className="text-xs text-ink-muted">Uploading...</p> : null}
-      <Button type="button" variant="outline" onClick={() => inputRef.current?.click()}>
-        Choose File
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" onClick={() => inputRef.current?.click()}>
+          Choose File
+        </Button>
+        {value ? (
+          <Button type="button" variant="ghost" onClick={() => void clearLogo()}>
+            Remove Logo
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

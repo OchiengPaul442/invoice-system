@@ -82,22 +82,22 @@ export default function RegisterPage(): JSX.Element {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-[#fff7eb] px-4 py-8">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-[#fff7eb] px-4 py-8 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       <Card className="w-full max-w-md rounded-2xl border-surface-border shadow-md">
         <CardHeader>
           <div className="mb-4 flex items-center gap-3">
             <Image
               src="/LOGO.png"
-              alt="InvoiceFlow logo"
+              alt="LedgerBloom logo"
               width={44}
               height={44}
               className="rounded-xl"
               priority
             />
-            <p className="text-sm font-medium uppercase tracking-[0.12em] text-ink-muted">InvoiceFlow</p>
+            <p className="text-sm font-medium uppercase tracking-[0.12em] text-ink-muted">LedgerBloom</p>
           </div>
           <CardTitle className="text-2xl font-semibold text-ink">
-            Create your InvoiceFlow account
+            Create your LedgerBloom account
           </CardTitle>
         </CardHeader>
         <CardContent>

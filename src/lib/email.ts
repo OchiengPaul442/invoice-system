@@ -6,6 +6,7 @@ interface SendEmailOptions {
   html: string;
   text: string;
   cc?: string[];
+  replyTo?: string;
   attachments?: Array<{
     filename: string;
     content: Buffer;
@@ -24,6 +25,7 @@ async function sendViaResend({
   html,
   text,
   cc,
+  replyTo,
   attachments,
   apiKey,
   from,
@@ -38,12 +40,14 @@ async function sendViaResend({
       from,
       to,
       cc,
+      reply_to: replyTo,
       subject,
       html,
       text,
       attachments: attachments?.map((attachment) => ({
         filename: attachment.filename,
         content: attachment.content.toString("base64"),
+        content_type: attachment.contentType || "application/pdf",
       })),
     }),
   });
@@ -66,6 +70,7 @@ async function sendViaSmtp({
   html,
   text,
   cc,
+  replyTo,
   attachments,
   from,
 }: SendEmailOptions & { from: string }): Promise<EmailResponse> {
@@ -90,6 +95,7 @@ async function sendViaSmtp({
     from,
     to,
     cc,
+    replyTo,
     subject,
     text,
     html,
@@ -112,13 +118,13 @@ export async function sendTransactionalEmail(options: SendEmailOptions): Promise
     throw new Error("Missing EMAIL_FROM");
   }
 
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    return sendViaSmtp({ ...options, from });
+  }
+
   const resendApiKey = process.env.RESEND_API_KEY;
   if (resendApiKey) {
     return sendViaResend({ ...options, apiKey: resendApiKey, from });
-  }
-
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    return sendViaSmtp({ ...options, from });
   }
 
   throw new Error(
