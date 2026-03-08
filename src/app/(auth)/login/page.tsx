@@ -86,11 +86,11 @@ export default function LoginPage(): JSX.Element {
       subtitle="Track invoices, follow up clients, and keep receivables under control from one place."
       title="Collect Payments With Confidence"
     >
-      <div className="w-full">
+      <div className="mx-auto w-full max-w-[520px]">
         <div className="mb-8 flex items-center justify-center gap-3 lg:justify-start">
           <p className="text-xl font-semibold text-ink">LedgerBloom</p>
         </div>
-        <div className="w-full rounded-xl border border-surface-border bg-white/90 p-6 shadow-sm dark:bg-slate-950/80 sm:p-8">
+        <div className="w-full border border-surface-border bg-white/90 p-6 shadow-sm dark:bg-slate-950/80 sm:p-8">
           <div className="mb-7">
             <div className="mb-4 flex items-center gap-3">
               <Image
@@ -136,7 +136,7 @@ export default function LoginPage(): JSX.Element {
                 Create account
               </Link>
             </div>
-            <Button className="h-11 w-full rounded-lg bg-brand-600 text-white hover:bg-brand-700 dark:bg-brand-500 dark:text-white dark:hover:bg-brand-600" disabled={isSubmitting || oauthLoading !== null} type="submit">
+            <Button className="h-11 w-full rounded-md bg-brand-600 text-white hover:bg-brand-700 dark:bg-brand-500 dark:text-white dark:hover:bg-brand-600" disabled={isSubmitting || oauthLoading !== null} type="submit">
               {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
           </form>

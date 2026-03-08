@@ -96,9 +96,14 @@ export function usePDFDownload(): {
     cloudPdfUrl?: string | null,
   ): Promise<void> => {
     setIsOpening(true);
+    const popup = window.open("", "_blank", "noopener,noreferrer");
     try {
       if (cloudPdfUrl) {
-        window.open(cloudPdfUrl, "_blank", "noopener,noreferrer");
+        if (popup) {
+          popup.location.href = cloudPdfUrl;
+        } else {
+          window.open(cloudPdfUrl, "_blank", "noopener,noreferrer");
+        }
         return;
       }
 
@@ -122,12 +127,19 @@ export function usePDFDownload(): {
       }
 
       const objectUrl = window.URL.createObjectURL(blob);
-      window.open(objectUrl, "_blank", "noopener,noreferrer");
+      if (popup) {
+        popup.location.href = objectUrl;
+      } else {
+        window.open(objectUrl, "_blank", "noopener,noreferrer");
+      }
       window.setTimeout(() => {
         window.URL.revokeObjectURL(objectUrl);
       }, 30_000);
     } catch (error) {
       console.error("Open PDF failed:", error);
+      if (popup && !popup.closed) {
+        popup.close();
+      }
       if (cloudPdfUrl) {
         window.open(cloudPdfUrl, "_blank", "noopener,noreferrer");
       }

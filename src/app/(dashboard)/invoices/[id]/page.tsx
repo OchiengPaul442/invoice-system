@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Download, ExternalLink, Mail, Pencil, Send, Trash2 } from "lucide-react";
+import useSWR from "swr";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { jsonFetcher } from "@/lib/fetcher";
 import { usePDFDownload } from "@/hooks/usePDFDownload";
 import { toast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -63,42 +65,17 @@ export default function InvoiceDetailPage(): JSX.Element {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { downloadPDF, isDownloading, isOpening, openPDFInBrowser } = usePDFDownload();
-  const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [customSubject, setCustomSubject] = useState("");
   const [customMessage, setCustomMessage] = useState("");
   const [statusAction, setStatusAction] = useState<"select" | "sent" | "paid" | null>(null);
-
-  const loadInvoice = useCallback(async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/invoices/${params.id}`, { cache: "no-store" });
-      const payload = (await response.json()) as {
-        success: boolean;
-        data?: InvoiceDetail;
-        error?: string;
-      };
-      if (!response.ok || !payload.success || !payload.data) {
-        throw new Error(payload.error || "Failed to load invoice");
-      }
-      setInvoice(payload.data);
-    } catch (error) {
-      console.error("Load invoice detail failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Load failed",
-        description: error instanceof Error ? error.message : "Unable to load invoice",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [params.id]);
-
-  useEffect(() => {
-    void loadInvoice();
-  }, [loadInvoice]);
+  const { data, isLoading, mutate } = useSWR<{ success: boolean; data?: InvoiceDetail }>(
+    `/api/invoices/${params.id}`,
+    jsonFetcher,
+    { revalidateOnFocus: true },
+  );
+  const invoice = data?.data || null;
 
   useEffect(() => {
     if (!invoice) return;
@@ -123,7 +100,7 @@ export default function InvoiceDetailPage(): JSX.Element {
         throw new Error(payload.error || "Failed to update status");
       }
       toast({ title: "Status updated", description: `Invoice marked as ${status}` });
-      await loadInvoice();
+      await mutate();
     } catch (error) {
       console.error("Update status failed:", error);
       toast({
@@ -178,7 +155,7 @@ export default function InvoiceDetailPage(): JSX.Element {
       }
       toast({ title: "Invoice emailed", description: `Sent to ${invoice.billToEmail}` });
       setEmailDialogOpen(false);
-      await loadInvoice();
+      await mutate();
     } catch (error) {
       console.error("Send invoice email failed:", error);
       toast({

@@ -42,7 +42,7 @@ export function SocialAuthButtons({
   return (
     <div className="grid grid-cols-2 gap-2">
       <Button
-        className="w-full justify-center rounded-lg"
+        className="w-full justify-center rounded-md"
         disabled={isLoading !== null || !googleAvailable}
         onClick={onGoogle}
         type="button"
@@ -52,7 +52,7 @@ export function SocialAuthButtons({
         {isLoading === "google" ? "Connecting..." : "Sign in with Google"}
       </Button>
       <Button
-        className="w-full justify-center rounded-lg"
+        className="w-full justify-center rounded-md"
         disabled={isLoading !== null || !githubAvailable}
         onClick={onGithub}
         type="button"

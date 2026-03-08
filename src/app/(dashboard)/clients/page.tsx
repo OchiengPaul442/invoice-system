@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
+import useSWR from "swr";
 import { ClientCard } from "@/components/client/ClientCard";
 import { ClientForm } from "@/components/client/ClientForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { jsonFetcher } from "@/lib/fetcher";
 
 interface ClientItem {
   id: string;
@@ -21,35 +23,21 @@ interface ClientItem {
 }
 
 export default function ClientsPage(): JSX.Element {
-  const [clients, setClients] = useState<ClientItem[]>([]);
   const [search, setSearch] = useState("");
   const [deferredSearch, setDeferredSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDeferredSearch(search.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  const load = useCallback(async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/clients?search=${encodeURIComponent(deferredSearch)}`, {
-        cache: "no-store",
-      });
-      const payload = (await response.json()) as { success: boolean; data?: ClientItem[] };
-      if (payload.success && payload.data) {
-        setClients(payload.data);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [deferredSearch]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { data, isLoading, mutate } = useSWR<{ success: boolean; data?: ClientItem[] }>(
+    `/api/clients?search=${encodeURIComponent(deferredSearch)}`,
+    jsonFetcher,
+    { revalidateOnFocus: true },
+  );
+  const clients = data?.data || [];
 
   return (
     <div className="space-y-4">
@@ -70,7 +58,7 @@ export default function ClientsPage(): JSX.Element {
             <ClientForm
               onSuccess={() => {
                 setShowForm(false);
-                void load();
+                void mutate();
               }}
             />
           </CardContent>

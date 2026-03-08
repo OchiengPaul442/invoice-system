@@ -3,8 +3,10 @@
 import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Github } from "lucide-react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { jsonFetcher } from "@/lib/fetcher";
 import { formatDate } from "@/lib/utils";
 
 type ProviderKey = "google" | "github";
@@ -61,37 +63,27 @@ const providerMeta: Record<ProviderKey, { title: string; blurb: string; icon: JS
 };
 
 export function ConnectedAccounts(): JSX.Element {
-  const [providers, setProviders] = useState<Record<ProviderKey, ProviderState>>({
-    google: { available: false, linked: false, linkedEmail: null, linkedAt: null },
-    github: { available: false, linked: false, linkedEmail: null, linkedAt: null },
-  });
-  const [isLoading, setIsLoading] = useState(true);
   const [busyProvider, setBusyProvider] = useState<ProviderKey | null>(null);
+  const { data, isLoading, mutate } = useSWR<ConnectionsResponse>(
+    "/api/settings/connections",
+    jsonFetcher,
+    { revalidateOnFocus: true },
+  );
+  const providers =
+    data?.data?.providers || {
+      google: { available: false, linked: false, linkedEmail: null, linkedAt: null },
+      github: { available: false, linked: false, linkedEmail: null, linkedAt: null },
+    };
 
-  const loadConnections = async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/settings/connections", { cache: "no-store" });
-      const payload = (await response.json()) as ConnectionsResponse;
-      if (!response.ok || !payload.success || !payload.data) {
-        throw new Error(payload.error || "Failed to load auth providers");
-      }
-      setProviders(payload.data.providers);
-    } catch (error) {
-      console.error("Load connections failed:", error);
+  useEffect(() => {
+    if (data?.success === false) {
       toast({
         variant: "destructive",
         title: "Unable to load linked accounts",
-        description: error instanceof Error ? error.message : "Try again shortly.",
+        description: data.error || "Try again shortly.",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    void loadConnections();
-  }, []);
+  }, [data]);
 
   const connectProvider = async (provider: ProviderKey): Promise<void> => {
     if (!providers[provider].available) {
@@ -122,7 +114,7 @@ export function ConnectedAccounts(): JSX.Element {
         throw new Error(payload.error || "Failed to unlink provider");
       }
       toast({ title: `${providerMeta[provider].title} unlinked` });
-      await loadConnections();
+      await mutate();
     } catch (error) {
       console.error("Unlink provider failed:", error);
       toast({
@@ -198,4 +190,3 @@ export function ConnectedAccounts(): JSX.Element {
     </div>
   );
 }
-

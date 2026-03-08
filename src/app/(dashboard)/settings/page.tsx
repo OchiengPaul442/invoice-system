@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams } from "next/navigation";
+import useSWR from "swr";
+import { jsonFetcher } from "@/lib/fetcher";
 
 interface SettingsPayload {
   success: boolean;
@@ -22,30 +24,15 @@ interface SettingsPayload {
 export default function SettingsPage(): JSX.Element {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab");
-  const [payload, setPayload] = useState<SettingsPayload["data"] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(
     initialTab === "accounts" || initialTab === "feedback" || initialTab === "invoice"
       ? initialTab
       : "business",
   );
-
-  const load = async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/settings", { cache: "no-store" });
-      const data = (await response.json()) as SettingsPayload;
-      if (data.success && data.data) {
-        setPayload(data.data);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void load();
-  }, []);
+  const { data, isLoading, mutate } = useSWR<SettingsPayload>("/api/settings", jsonFetcher, {
+    revalidateOnFocus: true,
+  });
+  const payload = data?.data || null;
 
   useEffect(() => {
     if (initialTab === "accounts" || initialTab === "feedback" || initialTab === "invoice") {
@@ -97,7 +84,7 @@ export default function SettingsPage(): JSX.Element {
                   accountEmail={payload?.user.email}
                   accountName={payload?.user.name}
                   initialValues={payload?.profile || undefined}
-                  onSaved={load}
+                  onSaved={() => void mutate()}
                 />
               </CardContent>
             </Card>
@@ -109,7 +96,10 @@ export default function SettingsPage(): JSX.Element {
                 <CardTitle>Invoice Defaults</CardTitle>
               </CardHeader>
               <CardContent>
-                <BrandingSettings initialValues={payload?.invoiceSettings || undefined} onSaved={load} />
+                <BrandingSettings
+                  initialValues={payload?.invoiceSettings || undefined}
+                  onSaved={() => void mutate()}
+                />
               </CardContent>
             </Card>
           </TabsContent>

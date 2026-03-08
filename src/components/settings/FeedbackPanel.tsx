@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { jsonFetcher } from "@/lib/fetcher";
 import { formatDate } from "@/lib/utils";
 import { feedbackSchema } from "@/schemas/feedback.schema";
 
@@ -24,8 +25,6 @@ interface FeedbackListItem {
 }
 
 export function FeedbackPanel({ accountEmail }: { accountEmail?: string }): JSX.Element {
-  const [history, setHistory] = useState<FeedbackListItem[]>([]);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const {
     register,
     setValue,
@@ -42,30 +41,14 @@ export function FeedbackPanel({ accountEmail }: { accountEmail?: string }): JSX.
       contactEmail: accountEmail || "",
     },
   });
+  const { data, isLoading: isHistoryLoading, mutate } = useSWR<{ success: boolean; data?: FeedbackListItem[] }>(
+    "/api/feedback",
+    jsonFetcher,
+    { revalidateOnFocus: true },
+  );
+  const history = data?.data || [];
 
   const category = watch("category");
-
-  const loadHistory = async (): Promise<void> => {
-    try {
-      setIsHistoryLoading(true);
-      const response = await fetch("/api/feedback", { cache: "no-store" });
-      const payload = (await response.json()) as {
-        success: boolean;
-        data?: FeedbackListItem[];
-      };
-      if (response.ok && payload.success && payload.data) {
-        setHistory(payload.data);
-      }
-    } catch (error) {
-      console.error("Load feedback history failed:", error);
-    } finally {
-      setIsHistoryLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadHistory();
-  }, []);
 
   const onSubmit = async (values: FeedbackValues): Promise<void> => {
     try {
@@ -88,7 +71,7 @@ export function FeedbackPanel({ accountEmail }: { accountEmail?: string }): JSX.
         message: "",
         contactEmail: values.contactEmail || accountEmail || "",
       });
-      await loadHistory();
+      await mutate();
     } catch (error) {
       console.error("Submit feedback failed:", error);
       toast({
@@ -163,4 +146,3 @@ export function FeedbackPanel({ accountEmail }: { accountEmail?: string }): JSX.
     </div>
   );
 }
-

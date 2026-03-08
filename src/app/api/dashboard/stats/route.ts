@@ -1,6 +1,8 @@
 import { subMonths } from "date-fns";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { convertAmountWithUsdBase, getUsdExchangeRates } from "@/lib/exchange-rates";
+import { markOverdueInvoices } from "@/lib/overdue-checker";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(): Promise<NextResponse> {
@@ -14,25 +16,39 @@ export async function GET(): Promise<NextResponse> {
 
   try {
     const userId = session.user.id;
+    await markOverdueInvoices(userId);
+
     const sixMonthsAgo = subMonths(new Date(), 5);
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
     const [
+      profile,
+      invoiceSettings,
       totalInvoices,
-      paidAgg,
-      outstandingAgg,
+      paidByCurrency,
+      outstandingByCurrency,
       overdueCount,
       draftCount,
       recentInvoices,
       paidInvoicesLastSixMonths,
     ] = await Promise.all([
+      prisma.userProfile.findUnique({
+        where: { userId },
+        select: { currency: true },
+      }),
+      prisma.invoiceSettings.findUnique({
+        where: { userId },
+        select: { defaultCurrency: true },
+      }),
       prisma.invoice.count({ where: { userId } }),
-      prisma.invoice.aggregate({
+      prisma.invoice.groupBy({
+        by: ["currency"],
         where: { userId, status: "PAID" },
         _sum: { total: true },
       }),
-      prisma.invoice.aggregate({
+      prisma.invoice.groupBy({
+        by: ["currency"],
         where: { userId, status: { in: ["SENT", "OVERDUE", "PARTIAL"] } },
         _sum: { balanceDue: true },
       }),
@@ -42,6 +58,15 @@ export async function GET(): Promise<NextResponse> {
         where: { userId },
         orderBy: { createdAt: "desc" },
         take: 5,
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          dueDate: true,
+          billToName: true,
+          total: true,
+          currency: true,
+        },
       }),
       prisma.invoice.findMany({
         where: {
@@ -78,15 +103,49 @@ export async function GET(): Promise<NextResponse> {
         };
       });
 
+    const preferredCurrency =
+      (profile?.currency || invoiceSettings?.defaultCurrency || "UGX").trim().toUpperCase();
+    const usdRates = await getUsdExchangeRates();
+
+    const totalRevenue = paidByCurrency.reduce((sum, row) => {
+      const amount = Number(row._sum.total || 0);
+      return (
+        sum +
+        convertAmountWithUsdBase({
+          amount,
+          fromCurrency: row.currency,
+          toCurrency: preferredCurrency,
+          usdRates,
+        })
+      );
+    }, 0);
+
+    const outstanding = outstandingByCurrency.reduce((sum, row) => {
+      const amount = Number(row._sum.balanceDue || 0);
+      return (
+        sum +
+        convertAmountWithUsdBase({
+          amount,
+          fromCurrency: row.currency,
+          toCurrency: preferredCurrency,
+          usdRates,
+        })
+      );
+    }, 0);
+
     return NextResponse.json({
       success: true,
       data: {
         totalInvoices,
-        totalRevenue: Number(paidAgg._sum.total ?? 0),
-        outstanding: Number(outstandingAgg._sum.balanceDue ?? 0),
+        totalRevenue,
+        outstanding,
         overdueCount,
         draftCount,
-        recentInvoices,
+        preferredCurrency,
+        recentInvoices: recentInvoices.map((invoice) => ({
+          ...invoice,
+          total: Number(invoice.total),
+        })),
         monthlyRevenue,
       },
     });

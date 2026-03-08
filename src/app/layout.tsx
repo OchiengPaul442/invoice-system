@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 import Script from "next/script";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { SWRProvider } from "@/components/providers/SWRProvider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
@@ -45,8 +46,10 @@ export default function RootLayout({
       </head>
       <body className={`${manrope.variable} ${sora.variable} antialiased`}>
         <SessionProvider>
-          {children}
-          <Toaster />
+          <SWRProvider>
+            {children}
+            <Toaster />
+          </SWRProvider>
         </SessionProvider>
       </body>
     </html>
