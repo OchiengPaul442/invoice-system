@@ -59,9 +59,10 @@ interface InvoiceBuilderProps {
 export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { downloadPDF } = usePDFDownload();
+  const { downloadPDF, isDownloading } = usePDFDownload();
   const { clients } = useClients<ClientOption>("isActive=true");
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMode, setSaveMode] = useState<"draft" | "download" | null>(null);
   const [isLoadingInvoice, setIsLoadingInvoice] = useState(Boolean(invoiceId));
 
   const store = useInvoiceBuilderStore();
@@ -356,6 +357,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
   );
 
   const saveInvoice = async (downloadAfterSave: boolean): Promise<void> => {
+    setSaveMode(downloadAfterSave ? "download" : "draft");
     setIsSaving(true);
     try {
       const response = await fetch(invoiceId ? `/api/invoices/${invoiceId}` : "/api/invoices", {
@@ -380,7 +382,16 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
       const number = data.data?.invoiceNumber ?? store.invoiceNumber ?? "invoice";
 
       if (downloadAfterSave) {
-        await downloadPDF(id as string, number);
+        try {
+          await downloadPDF(id as string, number);
+        } catch (error) {
+          toast({
+            variant: "destructive",
+            title: "Download failed",
+            description:
+              error instanceof Error ? error.message : "Invoice saved but PDF download failed.",
+          });
+        }
       }
 
       router.push(`/invoices/${id}`);
@@ -394,6 +405,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
       });
     } finally {
       setIsSaving(false);
+      setSaveMode(null);
     }
   };
 
@@ -675,11 +687,19 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
         <div className="sticky top-20 space-y-3">
           <InvoicePreview />
           <div className="grid gap-2">
-            <Button disabled={isSaving} onClick={() => void saveInvoice(false)} variant="outline">
-              {isSaving ? "Saving..." : "Save Draft"}
+            <Button
+              disabled={isSaving || isDownloading}
+              onClick={() => void saveInvoice(false)}
+              variant="outline"
+            >
+              {isSaving && saveMode === "draft" ? "Saving..." : "Save Draft"}
             </Button>
-            <Button disabled={isSaving} onClick={() => void saveInvoice(true)}>
-              {isSaving ? "Saving..." : "Save & Download PDF"}
+            <Button disabled={isSaving || isDownloading} onClick={() => void saveInvoice(true)}>
+              {isSaving && saveMode === "download"
+                ? "Saving..."
+                : isDownloading
+                  ? "Downloading..."
+                  : "Save & Download PDF"}
             </Button>
           </div>
         </div>

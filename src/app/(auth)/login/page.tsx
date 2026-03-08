@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -54,6 +55,17 @@ export default function LoginPage(): JSX.Element {
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-[#fff7eb] px-4 py-8">
       <Card className="w-full max-w-md rounded-2xl border-surface-border shadow-md">
         <CardHeader>
+          <div className="mb-4 flex items-center gap-3">
+            <Image
+              src="/LOGO.png"
+              alt="InvoiceFlow logo"
+              width={44}
+              height={44}
+              className="rounded-xl"
+              priority
+            />
+            <p className="text-sm font-medium uppercase tracking-[0.12em] text-ink-muted">InvoiceFlow</p>
+          </div>
           <CardTitle className="text-2xl font-semibold text-ink">
             Sign in to InvoiceFlow
           </CardTitle>

@@ -6,6 +6,11 @@ interface SendEmailOptions {
   html: string;
   text: string;
   cc?: string[];
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
 }
 
 interface EmailResponse {
@@ -19,6 +24,7 @@ async function sendViaResend({
   html,
   text,
   cc,
+  attachments,
   apiKey,
   from,
 }: SendEmailOptions & { apiKey: string; from: string }): Promise<EmailResponse> {
@@ -35,6 +41,10 @@ async function sendViaResend({
       subject,
       html,
       text,
+      attachments: attachments?.map((attachment) => ({
+        filename: attachment.filename,
+        content: attachment.content.toString("base64"),
+      })),
     }),
   });
 
@@ -56,6 +66,7 @@ async function sendViaSmtp({
   html,
   text,
   cc,
+  attachments,
   from,
 }: SendEmailOptions & { from: string }): Promise<EmailResponse> {
   const host = process.env.SMTP_HOST;
@@ -82,6 +93,11 @@ async function sendViaSmtp({
     subject,
     text,
     html,
+    attachments: attachments?.map((attachment) => ({
+      filename: attachment.filename,
+      content: attachment.content,
+      contentType: attachment.contentType || "application/pdf",
+    })),
   });
 
   return {

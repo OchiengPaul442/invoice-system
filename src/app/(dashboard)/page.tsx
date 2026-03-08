@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
+import { convertAmountWithUsdBase, getUsdExchangeRates } from "@/lib/exchange-rates";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -15,14 +16,33 @@ export default async function DashboardPage(): Promise<JSX.Element> {
   }
 
   const userId = session.user.id;
-  const [totalInvoices, paidAgg, outstandingAgg, overdueCount, draftCount, recentInvoices] =
+  const [
+    profile,
+    invoiceSettings,
+    totalInvoices,
+    paidByCurrency,
+    outstandingByCurrency,
+    overdueCount,
+    draftCount,
+    recentInvoices,
+  ] =
     await Promise.all([
+      prisma.userProfile.findUnique({
+        where: { userId },
+        select: { currency: true },
+      }),
+      prisma.invoiceSettings.findUnique({
+        where: { userId },
+        select: { defaultCurrency: true },
+      }),
       prisma.invoice.count({ where: { userId } }),
-      prisma.invoice.aggregate({
+      prisma.invoice.groupBy({
+        by: ["currency"],
         where: { userId, status: "PAID" },
         _sum: { total: true },
       }),
-      prisma.invoice.aggregate({
+      prisma.invoice.groupBy({
+        by: ["currency"],
         where: { userId, status: { in: ["SENT", "OVERDUE", "PARTIAL"] } },
         _sum: { balanceDue: true },
       }),
@@ -32,8 +52,49 @@ export default async function DashboardPage(): Promise<JSX.Element> {
         where: { userId },
         orderBy: { createdAt: "desc" },
         take: 5,
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          dueDate: true,
+          billToName: true,
+          total: true,
+          currency: true,
+        },
       }),
     ]);
+
+  const preferredCurrency =
+    (profile?.currency || invoiceSettings?.defaultCurrency || "UGX")
+      .trim()
+      .toUpperCase();
+  const usdRates = await getUsdExchangeRates();
+
+  const totalRevenue = paidByCurrency.reduce((sum, row) => {
+    const amount = Number(row._sum.total || 0);
+    return (
+      sum +
+      convertAmountWithUsdBase({
+        amount,
+        fromCurrency: row.currency,
+        toCurrency: preferredCurrency,
+        usdRates,
+      })
+    );
+  }, 0);
+
+  const outstandingTotal = outstandingByCurrency.reduce((sum, row) => {
+    const amount = Number(row._sum.balanceDue || 0);
+    return (
+      sum +
+      convertAmountWithUsdBase({
+        amount,
+        fromCurrency: row.currency,
+        toCurrency: preferredCurrency,
+        usdRates,
+      })
+    );
+  }, 0);
 
   return (
     <div className="space-y-6">
@@ -44,7 +105,7 @@ export default async function DashboardPage(): Promise<JSX.Element> {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold text-ink">
-              {formatCurrency(Number(paidAgg._sum.total || 0), "UGX")}
+              {formatCurrency(totalRevenue, preferredCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -54,7 +115,7 @@ export default async function DashboardPage(): Promise<JSX.Element> {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold text-ink">
-              {formatCurrency(Number(outstandingAgg._sum.balanceDue || 0), "UGX")}
+              {formatCurrency(outstandingTotal, preferredCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -108,7 +169,20 @@ export default async function DashboardPage(): Promise<JSX.Element> {
                       <td className="py-2 font-medium text-ink">{invoice.invoiceNumber}</td>
                       <td className="py-2 text-ink-muted">{invoice.billToName}</td>
                       <td className="py-2 text-ink">
-                        {formatCurrency(Number(invoice.total), "UGX")}
+                        {formatCurrency(
+                          convertAmountWithUsdBase({
+                            amount: Number(invoice.total),
+                            fromCurrency: invoice.currency,
+                            toCurrency: preferredCurrency,
+                            usdRates,
+                          }),
+                          preferredCurrency,
+                        )}
+                        {invoice.currency !== preferredCurrency ? (
+                          <p className="text-xs text-ink-muted">
+                            {formatCurrency(Number(invoice.total), invoice.currency)}
+                          </p>
+                        ) : null}
                       </td>
                       <td className="py-2">
                         <StatusBadge status={invoice.status} />

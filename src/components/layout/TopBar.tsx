@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const titleMap: Record<string, string> = {
@@ -35,13 +35,6 @@ export function TopBar(): JSX.Element {
               New Invoice
             </Link>
           </Button>
-          <button
-            aria-label="Notifications"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-surface-border text-ink-muted transition-colors hover:bg-slate-50 hover:text-ink"
-            type="button"
-          >
-            <Bell className="h-4 w-4" />
-          </button>
         </div>
       </div>
     </header>

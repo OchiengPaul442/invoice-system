@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -9,7 +10,6 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  Sparkles,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -57,8 +57,15 @@ export function Sidebar(): JSX.Element {
     <aside className="sticky top-0 hidden h-[100dvh] w-72 shrink-0 flex-col border-r border-surface-border bg-white/90 backdrop-blur md:flex">
       <div className="border-b border-surface-border px-6 py-5">
         <Link href="/" className="inline-flex items-center gap-3">
-          <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
-            <Sparkles className="h-4 w-4" />
+          <div className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100">
+            <Image
+              src="/LOGO.png"
+              alt="InvoiceFlow logo"
+              width={36}
+              height={36}
+              className="h-full w-full object-cover"
+              priority
+            />
           </div>
           <div>
             <p className="text-base font-bold text-ink">InvoiceFlow</p>

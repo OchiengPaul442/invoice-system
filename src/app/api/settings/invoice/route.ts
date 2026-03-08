@@ -26,10 +26,17 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    const normalized = {
+      ...parsed.data,
+      defaultCurrency: parsed.data.defaultCurrency
+        ? parsed.data.defaultCurrency.trim().toUpperCase()
+        : parsed.data.defaultCurrency,
+    };
+
     const settings = await prisma.invoiceSettings.upsert({
       where: { userId: session.user.id },
-      update: parsed.data,
-      create: { userId: session.user.id, ...parsed.data },
+      update: normalized,
+      create: { userId: session.user.id, ...normalized },
     });
 
     return NextResponse.json({ success: true, data: settings });

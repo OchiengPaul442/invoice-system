@@ -7,6 +7,7 @@ import { Download, Mail, Pencil, Send, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePDFDownload } from "@/hooks/usePDFDownload";
 import { toast } from "@/hooks/use-toast";
@@ -58,7 +59,7 @@ interface InvoiceDetail {
 export default function InvoiceDetailPage(): JSX.Element {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { downloadPDF } = usePDFDownload();
+  const { downloadPDF, isDownloading } = usePDFDownload();
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -201,19 +202,34 @@ export default function InvoiceDetailPage(): JSX.Element {
             </Link>
           </Button>
           <Button
+            disabled={isDownloading}
             variant="outline"
             onClick={() => void downloadPDF(invoice.id, invoice.invoiceNumber)}
           >
             <Download className="mr-2 h-4 w-4" />
-            Download PDF
+            {isDownloading ? "Downloading..." : "Download PDF"}
           </Button>
           {invoice.pdfUrl ? (
             <Button asChild variant="outline">
               <a href={invoice.pdfUrl} rel="noreferrer" target="_blank">
-                Open Cloud Copy
+                Open Shared PDF
               </a>
             </Button>
           ) : null}
+          <Select value={invoice.status} onValueChange={(value) => void updateStatus(value)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="DRAFT">Draft</SelectItem>
+              <SelectItem value="SENT">Sent</SelectItem>
+              <SelectItem value="VIEWED">Viewed</SelectItem>
+              <SelectItem value="PARTIAL">Partial</SelectItem>
+              <SelectItem value="PAID">Paid</SelectItem>
+              <SelectItem value="OVERDUE">Overdue</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" onClick={() => void updateStatus("SENT")}>
             <Send className="mr-2 h-4 w-4" />
             Mark Sent

@@ -69,8 +69,18 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_NAME="InvoiceFlow"
 UPLOAD_DIR="./public/uploads"
 MAX_UPLOAD_SIZE_MB=5
-RESEND_API_KEY=""
 EMAIL_FROM="InvoiceFlow <noreply@your-domain.com>"
+RESEND_API_KEY=""
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_SECURE="false"
+CLOUDINARY_CLOUD_NAME=""
+CLOUDINARY_API_KEY=""
+CLOUDINARY_API_SECRET=""
+CLOUDINARY_FOLDER="invoiceflow/invoices"
+EXCHANGE_RATES_API_URL="https://open.er-api.com/v6/latest/USD"
 ```
 
 ## Email Sending (Free Provider)
@@ -100,6 +110,10 @@ Deliverability notes:
 - Keep subject/body consistent and invoice-focused.
 - Avoid spammy wording and excessive links.
 
+Invoice emails include:
+- attached PDF invoice
+- secure external view link (no app account required)
+
 ## Cloudinary Invoice PDF Storage
 
 On invoice create/update, PDF snapshots are generated and uploaded to Cloudinary (raw files) when Cloudinary env vars are set.
@@ -120,6 +134,12 @@ After schema changes, run:
 pnpm db:generate
 pnpm exec prisma db push
 ```
+
+## Multi-Currency Dashboard Conversion
+
+Dashboard totals are converted to the user preferred currency using live exchange rates from a free endpoint (`open.er-api.com` by default).
+
+If conversion API is unavailable, the dashboard falls back gracefully and shows a note.
 
 ## Template Workflow
 

@@ -26,12 +26,18 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    const normalizedCurrency = (parsed.data.currency || "UGX").trim().toUpperCase();
+    const normalized = {
+      ...parsed.data,
+      currency: /^[A-Z]{3}$/.test(normalizedCurrency) ? normalizedCurrency : "UGX",
+    };
+
     const profile = await prisma.userProfile.upsert({
       where: { userId: session.user.id },
-      update: parsed.data,
+      update: normalized,
       create: {
         userId: session.user.id,
-        ...parsed.data,
+        ...normalized,
       },
     });
 
