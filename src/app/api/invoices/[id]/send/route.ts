@@ -48,27 +48,39 @@ function invoiceEmailHtml({
   currency: string;
 }): string {
   return `
-  <div style="font-family:'Aptos','Segoe UI',Arial,sans-serif;line-height:1.55;color:#0f172a;max-width:680px;margin:0 auto;padding:24px;background:#f3f4f6">
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden">
-      <div style="padding:20px 28px;background:linear-gradient(120deg,#0f766e,#0b4f55);color:#f8fafc">
-        <p style="margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.82">${appName}</p>
-        <h2 style="margin:10px 0 0;font-size:28px;font-weight:700;letter-spacing:.01em">Invoice ${invoiceNumber}</h2>
+  <div style="font-family:'Segoe UI',Arial,sans-serif;line-height:1.58;color:#0f172a;max-width:700px;margin:0 auto;padding:24px;background:#f1f5f9">
+    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;overflow:hidden">
+      <div style="padding:22px 30px;background:linear-gradient(120deg,#0f766e,#115e59);color:#f8fafc">
+        <p style="margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.88">${appName}</p>
+        <h2 style="margin:10px 0 0;font-size:30px;font-weight:700;letter-spacing:.01em">Invoice ${invoiceNumber}</h2>
       </div>
-      <div style="padding:28px">
+      <div style="padding:30px">
         <p style="margin:0 0 14px;color:#334155;font-size:16px">Hello ${recipientName},</p>
         <p style="margin:0 0 18px;color:#334155;font-size:16px">
-          Please find your invoice attached as a PDF document. Kindly review the details and process payment by the due date shown below.
+          Please find your invoice attached for your records. We kindly request payment by the due date below.
         </p>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px">
-          <p style="margin:0 0 8px"><strong>Amount due:</strong> ${formatCurrency(amountDue, currency)}</p>
-          <p style="margin:0 0 8px"><strong>Due date:</strong> ${formatDate(dueDate)}</p>
-          <p style="margin:0"><strong>Invoice number:</strong> ${invoiceNumber}</p>
+        <div style="background:#f8fafc;border:1px solid #dbe4ee;border-radius:14px;padding:18px;margin-bottom:18px">
+          <table style="width:100%;border-collapse:collapse">
+            <tr>
+              <td style="padding:0 0 8px;color:#475569;font-size:14px">Amount due</td>
+              <td style="padding:0 0 8px;text-align:right;font-size:20px;font-weight:700;color:#0f172a">${formatCurrency(amountDue, currency)}</td>
+            </tr>
+            <tr>
+              <td style="padding:0 0 8px;color:#475569;font-size:14px">Due date</td>
+              <td style="padding:0 0 8px;text-align:right;font-size:15px;font-weight:600;color:#0f172a">${formatDate(dueDate)}</td>
+            </tr>
+            <tr>
+              <td style="padding:0;color:#475569;font-size:14px">Invoice number</td>
+              <td style="padding:0;text-align:right;font-size:15px;font-weight:600;color:#0f172a">${invoiceNumber}</td>
+            </tr>
+          </table>
         </div>
-        <p style="margin:0;color:#64748b;font-size:14px">
-          This email includes the official invoice PDF as an attachment for your records.
+        <p style="margin:0;color:#475569;font-size:14px">
+          The official PDF invoice is attached to this email. Please include the invoice number when making payment.
         </p>
-        <p style="margin:18px 0 0;color:#0f172a;font-size:14px;font-weight:600">${senderName}</p>
-        <p style="margin:2px 0 0;color:#64748b;font-size:13px">${appName}</p>
+        <p style="margin:24px 0 0;color:#0f172a;font-size:14px;font-weight:600">Regards,</p>
+        <p style="margin:4px 0 0;color:#0f172a;font-size:14px;font-weight:600">${senderName}</p>
+        <p style="margin:2px 0 0;color:#64748b;font-size:13px">${appName} Billing</p>
       </div>
     </div>
   </div>
@@ -160,7 +172,7 @@ export async function POST(
       `Amount due: ${formatCurrency(Number(refreshed.total), refreshed.currency)}`,
       `Due: ${formatDate(refreshed.dueDate)}`,
       `Reference: ${refreshed.invoiceNumber}`,
-      "The invoice PDF is attached to this email.",
+      "Please find the official invoice PDF attached to this email.",
     ].join("\n");
     let attachmentBuffer = await getCloudPdfAttachment(refreshed.pdfUrl);
     if (!attachmentBuffer) {

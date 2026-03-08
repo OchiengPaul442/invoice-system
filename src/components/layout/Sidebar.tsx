@@ -85,8 +85,8 @@ export function Sidebar(): JSX.Element {
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-brand-50 text-brand-700"
-                  : "text-ink-muted hover:bg-slate-50 hover:text-ink",
+                  ? "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-emerald-100"
+                  : "text-ink-muted hover:bg-slate-50 hover:text-ink dark:hover:bg-slate-900/80 dark:hover:text-ink",
               )}
             >
               <Icon className="h-4 w-4" />

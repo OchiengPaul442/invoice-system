@@ -4,10 +4,16 @@ import { useState } from "react";
 
 export function usePDFDownload(): {
   isDownloading: boolean;
+  isOpening: boolean;
   downloadPDF: (invoiceId: string, invoiceNumber: string) => Promise<void>;
-  openPDFInBrowser: (invoiceId: string, invoiceNumber: string) => void;
+  openPDFInBrowser: (
+    invoiceId: string,
+    invoiceNumber: string,
+    cloudPdfUrl?: string | null,
+  ) => Promise<void>;
 } {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
 
   const downloadPDF = async (
     invoiceId: string,
@@ -82,13 +88,57 @@ export function usePDFDownload(): {
     }
   };
 
-  const openPDFInBrowser = (invoiceId: string, invoiceNumber: string): void => {
-    const params = new URLSearchParams({
-      download: "0",
-      filename: invoiceNumber,
-    });
-    window.open(`/api/pdf/${invoiceId}?${params.toString()}`, "_blank", "noopener,noreferrer");
+  const openPDFInBrowser = async (
+    invoiceId: string,
+    invoiceNumber: string,
+    cloudPdfUrl?: string | null,
+  ): Promise<void> => {
+    setIsOpening(true);
+    try {
+      if (cloudPdfUrl) {
+        window.open(cloudPdfUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const response = await fetch(`/api/pdf/${invoiceId}`, {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json", Accept: "application/pdf" },
+        body: JSON.stringify({
+          download: false,
+          fileName: invoiceNumber,
+        }),
+      });
+
+      if (!response.ok) {
+        const params = new URLSearchParams({
+          download: "0",
+          filename: invoiceNumber,
+        });
+        window.open(`/api/pdf/${invoiceId}?${params.toString()}`, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/pdf")) {
+        const params = new URLSearchParams({
+          download: "0",
+          filename: invoiceNumber,
+        });
+        window.open(`/api/pdf/${invoiceId}?${params.toString()}`, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(objectUrl);
+      }, 30_000);
+    } finally {
+      setIsOpening(false);
+    }
   };
 
-  return { downloadPDF, isDownloading, openPDFInBrowser };
+  return { downloadPDF, isDownloading, isOpening, openPDFInBrowser };
 }

@@ -72,7 +72,7 @@ export function LogoUpload({
   return (
     <div className="space-y-2">
       <div
-        className="flex cursor-pointer items-center justify-center rounded-md border border-dashed border-surface-border bg-slate-50 p-4"
+        className="flex cursor-pointer items-center justify-center rounded-md border border-dashed border-surface-border bg-slate-50 p-4 dark:bg-slate-900/70"
         onClick={() => inputRef.current?.click()}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -101,7 +101,7 @@ export function LogoUpload({
         }}
       />
       {value ? (
-        <div className="rounded-md border border-surface-border p-2">
+        <div className="rounded-md border border-surface-border p-2 dark:bg-slate-900/70">
           <Image
             alt="Business logo"
             className="h-16 w-auto object-contain"

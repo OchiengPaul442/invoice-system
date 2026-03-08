@@ -60,6 +60,7 @@ async function buildPdfResponse({
             "Content-Type": "application/pdf",
             "Content-Disposition": `${dispositionType}; filename="${safeFileName}.pdf"`,
             "Cache-Control": "no-store, no-cache, must-revalidate",
+            "X-PDF-Source": "cloudinary",
             "X-Content-Type-Options": "nosniff",
           },
         });
@@ -76,6 +77,7 @@ async function buildPdfResponse({
       "Content-Type": "application/pdf",
       "Content-Disposition": `${dispositionType}; filename="${safeFileName || invoiceNumber}.pdf"`,
       "Cache-Control": "no-store, no-cache, must-revalidate",
+      "X-PDF-Source": "generated",
       "X-Content-Type-Options": "nosniff",
     },
   });

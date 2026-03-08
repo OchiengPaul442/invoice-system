@@ -59,7 +59,7 @@ interface InvoiceDetail {
 export default function InvoiceDetailPage(): JSX.Element {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { downloadPDF, isDownloading, openPDFInBrowser } = usePDFDownload();
+  const { downloadPDF, isDownloading, isOpening, openPDFInBrowser } = usePDFDownload();
   const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -210,11 +210,14 @@ export default function InvoiceDetailPage(): JSX.Element {
             {isDownloading ? "Downloading..." : "Download PDF"}
           </Button>
           <Button
+            disabled={isOpening}
             variant="outline"
-            onClick={() => openPDFInBrowser(invoice.id, invoice.invoiceNumber)}
+            onClick={() =>
+              void openPDFInBrowser(invoice.id, invoice.invoiceNumber, invoice.pdfUrl)
+            }
           >
             <ExternalLink className="mr-2 h-4 w-4" />
-            Open PDF
+            {isOpening ? "Opening..." : "Open PDF"}
           </Button>
           <Select value={invoice.status} onValueChange={(value) => void updateStatus(value)}>
             <SelectTrigger className="w-[160px]">
@@ -266,7 +269,7 @@ export default function InvoiceDetailPage(): JSX.Element {
 
           <div className="overflow-x-auto rounded-md border border-surface-border">
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-ink-muted">
+              <thead className="bg-slate-50 text-xs uppercase text-ink-muted dark:bg-slate-900/80">
                 <tr>
                   <th className="px-3 py-2 text-left">Description</th>
                   <th className="px-3 py-2 text-right">Qty</th>
