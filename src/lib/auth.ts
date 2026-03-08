@@ -70,73 +70,78 @@ const providers: NextAuthOptions["providers"] = [
       remember: { label: "Remember", type: "text" },
     },
     async authorize(credentials) {
-      const email = credentials?.email;
-      const password = credentials?.password;
-      if (typeof email !== "string" || typeof password !== "string") {
-        return null;
-      }
+      try {
+        const email = credentials?.email;
+        const password = credentials?.password;
+        if (typeof email !== "string" || typeof password !== "string") {
+          return null;
+        }
 
-      const user = await prisma.user.findUnique({
-        where: { email: email.trim().toLowerCase() },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          password: true,
-          oauthConnections: {
-            select: { provider: true },
-          },
-        },
-      });
-      if (!user?.password) {
-        return null;
-      }
-
-      const hasCredentialsConnection = user.oauthConnections.some(
-        (connection) => connection.provider === "credentials",
-      );
-      const hasOAuthConnection = user.oauthConnections.some(
-        (connection) => connection.provider === "google" || connection.provider === "github",
-      );
-
-      // OAuth-only users should set a password from Settings after OAuth login.
-      if (!hasCredentialsConnection && hasOAuthConnection) {
-        return null;
-      }
-
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) {
-        return null;
-      }
-
-      if (!hasCredentialsConnection) {
-        await prisma.userOauthConnection.upsert({
-          where: {
-            userId_provider: {
-              userId: user.id,
-              provider: "credentials",
+        const user = await prisma.user.findUnique({
+          where: { email: email.trim().toLowerCase() },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            password: true,
+            oauthConnections: {
+              select: { provider: true },
             },
           },
-          update: {
-            providerAccountId: user.id,
-            providerEmail: user.email,
-          },
-          create: {
-            userId: user.id,
-            provider: "credentials",
-            providerAccountId: user.id,
-            providerEmail: user.email,
-          },
         });
-      }
+        if (!user?.password) {
+          return null;
+        }
 
-      await ensureUserDefaults(user.id);
-      return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        remember: credentials?.remember === "true",
-      };
+        const hasCredentialsConnection = user.oauthConnections.some(
+          (connection) => connection.provider === "credentials",
+        );
+        const hasOAuthConnection = user.oauthConnections.some(
+          (connection) => connection.provider === "google" || connection.provider === "github",
+        );
+
+        // OAuth-only users should set a password from Settings after OAuth login.
+        if (!hasCredentialsConnection && hasOAuthConnection) {
+          return null;
+        }
+
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) {
+          return null;
+        }
+
+        if (!hasCredentialsConnection) {
+          await prisma.userOauthConnection.upsert({
+            where: {
+              userId_provider: {
+                userId: user.id,
+                provider: "credentials",
+              },
+            },
+            update: {
+              providerAccountId: user.id,
+              providerEmail: user.email,
+            },
+            create: {
+              userId: user.id,
+              provider: "credentials",
+              providerAccountId: user.id,
+              providerEmail: user.email,
+            },
+          });
+        }
+
+        await ensureUserDefaults(user.id);
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          remember: credentials?.remember === "true",
+        };
+      } catch (error) {
+        console.error("Credentials authorize failed:", error);
+        return null;
+      }
     },
   }),
 ];
@@ -168,92 +173,101 @@ export const authOptions: NextAuthOptions = {
   providers,
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (!account || account.provider === "credentials") {
-        return true;
-      }
+      try {
+        if (!account || account.provider === "credentials") {
+          return true;
+        }
 
-      if (account.provider !== "google" && account.provider !== "github") {
-        return false;
-      }
-
-      if (account.provider === "google") {
-        const emailVerified = (profile as { email_verified?: boolean } | undefined)?.email_verified;
-        if (emailVerified === false) {
+        if (account.provider !== "google" && account.provider !== "github") {
           return false;
         }
-      }
 
-      const email = user.email?.trim().toLowerCase();
-      if (!email) {
-        return false;
-      }
-
-      const dbUser = await ensureOAuthUser({ email, name: user.name });
-      if (!account.providerAccountId) {
-        return false;
-      }
-
-      const existingProviderLink = await prisma.userOauthConnection.findUnique({
-        where: {
-          provider_providerAccountId: {
-            provider: account.provider,
-            providerAccountId: account.providerAccountId,
-          },
-        },
-        select: { userId: true },
-      });
-
-      if (existingProviderLink && existingProviderLink.userId !== dbUser.id) {
-        return false;
-      }
-
-      await prisma.userOauthConnection.upsert({
-        where: {
-          userId_provider: {
-            userId: dbUser.id,
-            provider: account.provider,
-          },
-        },
-        update: {
-          providerAccountId: account.providerAccountId,
-          providerEmail: email,
-        },
-        create: {
-          userId: dbUser.id,
-          provider: account.provider,
-          providerAccountId: account.providerAccountId,
-          providerEmail: email,
-        },
-      });
-
-      user.id = dbUser.id;
-      user.name = dbUser.name;
-      user.email = dbUser.email;
-      return true;
-    },
-    async jwt({ token, user, account }) {
-      if (user?.id) {
-        token.id = user.id;
-      }
-
-      if (typeof (user as { remember?: unknown } | undefined)?.remember === "boolean") {
-        token.remember = Boolean((user as { remember: boolean }).remember);
-      }
-
-      if (account && (account.provider === "google" || account.provider === "github")) {
-        const email = token.email?.trim().toLowerCase();
-        if (email && !token.id) {
-          const dbUser = await prisma.user.findUnique({
-            where: { email },
-            select: { id: true },
-          });
-          if (dbUser) {
-            token.id = dbUser.id;
+        if (account.provider === "google") {
+          const emailVerified = (profile as { email_verified?: boolean } | undefined)?.email_verified;
+          if (emailVerified === false) {
+            return false;
           }
         }
-        if (token.remember === undefined) {
-          token.remember = true;
+
+        const email = user.email?.trim().toLowerCase();
+        if (!email) {
+          return false;
         }
+
+        const dbUser = await ensureOAuthUser({ email, name: user.name });
+        if (!account.providerAccountId) {
+          return false;
+        }
+
+        const existingProviderLink = await prisma.userOauthConnection.findUnique({
+          where: {
+            provider_providerAccountId: {
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+            },
+          },
+          select: { userId: true },
+        });
+
+        if (existingProviderLink && existingProviderLink.userId !== dbUser.id) {
+          return false;
+        }
+
+        await prisma.userOauthConnection.upsert({
+          where: {
+            userId_provider: {
+              userId: dbUser.id,
+              provider: account.provider,
+            },
+          },
+          update: {
+            providerAccountId: account.providerAccountId,
+            providerEmail: email,
+          },
+          create: {
+            userId: dbUser.id,
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            providerEmail: email,
+          },
+        });
+
+        user.id = dbUser.id;
+        user.name = dbUser.name;
+        user.email = dbUser.email;
+        return true;
+      } catch (error) {
+        console.error("OAuth sign-in failed:", error);
+        return false;
+      }
+    },
+    async jwt({ token, user, account }) {
+      try {
+        if (user?.id) {
+          token.id = user.id;
+        }
+
+        if (typeof (user as { remember?: unknown } | undefined)?.remember === "boolean") {
+          token.remember = Boolean((user as { remember: boolean }).remember);
+        }
+
+        if (account && (account.provider === "google" || account.provider === "github")) {
+          const email = token.email?.trim().toLowerCase();
+          if (email && !token.id) {
+            const dbUser = await prisma.user.findUnique({
+              where: { email },
+              select: { id: true },
+            });
+            if (dbUser) {
+              token.id = dbUser.id;
+            }
+          }
+          if (token.remember === undefined) {
+            token.remember = true;
+          }
+        }
+      } catch (error) {
+        console.error("JWT callback failed:", error);
       }
 
       const now = Math.floor(Date.now() / 1000);
