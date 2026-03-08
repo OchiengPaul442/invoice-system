@@ -22,6 +22,7 @@ export default function RegisterPage(): JSX.Element {
   const router = useRouter();
   const [oauthLoading, setOauthLoading] = useState<"google" | "github" | null>(null);
   const [availableProviders, setAvailableProviders] = useState({ google: false, github: false });
+  const [callbackUrl, setCallbackUrl] = useState("/settings");
   const {
     register,
     handleSubmit,
@@ -62,6 +63,7 @@ export default function RegisterPage(): JSX.Element {
         password: values.password,
         remember: "true",
         redirect: false,
+        callbackUrl,
       });
 
       if (signInResult?.error) {
@@ -74,7 +76,7 @@ export default function RegisterPage(): JSX.Element {
         return;
       }
 
-      router.push("/settings");
+      router.push(callbackUrl);
       router.refresh();
     } catch (error) {
       console.error("Register request failed:", error);
@@ -96,10 +98,15 @@ export default function RegisterPage(): JSX.Element {
       return;
     }
     setOauthLoading(provider);
-    await signIn(provider, { callbackUrl: "/settings" });
+    await signIn(provider, { callbackUrl });
   };
 
   useEffect(() => {
+    const callbackUrlParam = new URLSearchParams(window.location.search).get("callbackUrl");
+    if (callbackUrlParam && callbackUrlParam.startsWith("/")) {
+      setCallbackUrl(callbackUrlParam);
+    }
+
     const loadProviders = async (): Promise<void> => {
       const providers = await getProviders();
       setAvailableProviders({
@@ -153,6 +160,9 @@ export default function RegisterPage(): JSX.Element {
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" {...register("password")} />
+              <p className="text-xs text-ink-muted">
+                Use at least 12 characters with uppercase, lowercase, number, and special character.
+              </p>
               {errors.password ? (
                 <p className="text-xs text-red-600">{errors.password.message}</p>
               ) : null}
@@ -181,6 +191,17 @@ export default function RegisterPage(): JSX.Element {
             <Link className="font-semibold text-slate-900 hover:underline dark:text-slate-100" href="/login">
               Sign in
             </Link>
+          </p>
+          <p className="mt-4 text-center text-xs text-ink-muted">
+            By creating an account, you agree to our{" "}
+            <Link className="text-brand-700 hover:underline" href="/terms">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link className="text-brand-700 hover:underline" href="/privacy">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </div>
       </div>

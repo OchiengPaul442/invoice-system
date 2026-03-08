@@ -12,13 +12,17 @@ export async function GET(): Promise<NextResponse> {
   }
 
   try {
-    const [user, profile, invoiceSettings] = await Promise.all([
+    const [user, profile, invoiceSettings, connections] = await Promise.all([
       prisma.user.findUnique({
         where: { id: session.user.id },
         select: { id: true, name: true, email: true },
       }),
       prisma.userProfile.findUnique({ where: { userId: session.user.id } }),
       prisma.invoiceSettings.findUnique({ where: { userId: session.user.id } }),
+      prisma.userOauthConnection.findMany({
+        where: { userId: session.user.id },
+        select: { provider: true },
+      }),
     ]);
 
     const normalizedInvoiceSettings = invoiceSettings
@@ -28,12 +32,24 @@ export async function GET(): Promise<NextResponse> {
         }
       : null;
 
+    const hasCredentialsConnection = connections.some(
+      (connection) => connection.provider === "credentials",
+    );
+    const oauthProviders = connections
+      .filter((connection) => connection.provider === "google" || connection.provider === "github")
+      .map((connection) => connection.provider);
+    const hasPassword = hasCredentialsConnection || oauthProviders.length === 0;
+
     return NextResponse.json({
       success: true,
       data: {
         user,
         profile,
         invoiceSettings: normalizedInvoiceSettings,
+        security: {
+          hasPassword,
+          oauthProviders,
+        },
       },
     });
   } catch (error) {

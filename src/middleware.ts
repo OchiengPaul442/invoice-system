@@ -10,6 +10,15 @@ export default async function middleware(req: NextRequest): Promise<NextResponse
 
   const isAuthenticated = !!token;
   const { pathname } = req.nextUrl;
+  const authPages = ["/login", "/register"];
+
+  const isAuthPage = authPages.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+
+  if (isAuthPage && isAuthenticated) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
 
   const protectedPaths = [
     "/",
@@ -23,6 +32,7 @@ export default async function middleware(req: NextRequest): Promise<NextResponse
     "/api/pdf",
     "/api/upload",
     "/api/dashboard",
+    "/api/feedback",
   ];
 
   const requiresAuth = protectedPaths.some(
@@ -37,6 +47,8 @@ export default async function middleware(req: NextRequest): Promise<NextResponse
       );
     }
     const loginUrl = new URL("/login", req.url);
+    const callbackPath = `${pathname}${req.nextUrl.search}`;
+    loginUrl.searchParams.set("callbackUrl", callbackPath);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -46,6 +58,8 @@ export default async function middleware(req: NextRequest): Promise<NextResponse
 export const config = {
   matcher: [
     "/",
+    "/login",
+    "/register",
     "/invoices/:path*",
     "/clients/:path*",
     "/settings/:path*",
@@ -56,5 +70,6 @@ export const config = {
     "/api/pdf/:path*",
     "/api/upload/:path*",
     "/api/dashboard/:path*",
+    "/api/feedback/:path*",
   ],
 };

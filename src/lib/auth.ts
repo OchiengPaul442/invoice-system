@@ -47,7 +47,7 @@ async function ensureOAuthUser({
   }
 
   const fallbackName = (name || "").trim() || normalizedEmail.split("@")[0] || "User";
-  const password = await bcrypt.hash(crypto.randomUUID(), 12);
+  const password = await bcrypt.hash(`${crypto.randomUUID()}-${crypto.randomUUID()}`, 12);
   const created = await prisma.user.create({
     data: {
       email: normalizedEmail,
@@ -77,15 +77,57 @@ const providers: NextAuthOptions["providers"] = [
       }
 
       const user = await prisma.user.findUnique({
-        where: { email },
+        where: { email: email.trim().toLowerCase() },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          password: true,
+          oauthConnections: {
+            select: { provider: true },
+          },
+        },
       });
       if (!user?.password) {
+        return null;
+      }
+
+      const hasCredentialsConnection = user.oauthConnections.some(
+        (connection) => connection.provider === "credentials",
+      );
+      const hasOAuthConnection = user.oauthConnections.some(
+        (connection) => connection.provider === "google" || connection.provider === "github",
+      );
+
+      // OAuth-only users should set a password from Settings after OAuth login.
+      if (!hasCredentialsConnection && hasOAuthConnection) {
         return null;
       }
 
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) {
         return null;
+      }
+
+      if (!hasCredentialsConnection) {
+        await prisma.userOauthConnection.upsert({
+          where: {
+            userId_provider: {
+              userId: user.id,
+              provider: "credentials",
+            },
+          },
+          update: {
+            providerAccountId: user.id,
+            providerEmail: user.email,
+          },
+          create: {
+            userId: user.id,
+            provider: "credentials",
+            providerAccountId: user.id,
+            providerEmail: user.email,
+          },
+        });
       }
 
       await ensureUserDefaults(user.id);

@@ -31,17 +31,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const hashed = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({
-      data: { name, email: normalizedEmail, password: hashed },
-      select: { id: true, email: true, name: true },
-    });
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: { name, email: normalizedEmail, password: hashed },
+        select: { id: true, email: true, name: true },
+      });
 
-    try {
-      await prisma.userProfile.create({ data: { userId: user.id } });
-      await prisma.invoiceSettings.create({ data: { userId: user.id } });
-    } catch (error) {
-      console.error("Post-registration defaults failed:", error);
-    }
+      await tx.userProfile.create({ data: { userId: created.id } });
+      await tx.invoiceSettings.create({ data: { userId: created.id } });
+      await tx.userOauthConnection.create({
+        data: {
+          userId: created.id,
+          provider: "credentials",
+          providerAccountId: created.id,
+          providerEmail: normalizedEmail,
+        },
+      });
+
+      return created;
+    });
 
     return NextResponse.json({ success: true, data: user }, { status: 201 });
   } catch (error) {

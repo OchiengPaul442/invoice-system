@@ -21,8 +21,7 @@ export function ThemeToggle(): JSX.Element {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const nextTheme = stored || (prefersDark ? "dark" : "light");
+    const nextTheme = stored || "light";
     setTheme(nextTheme);
     applyTheme(nextTheme);
   }, []);

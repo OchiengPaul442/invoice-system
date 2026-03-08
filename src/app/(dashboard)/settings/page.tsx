@@ -5,6 +5,7 @@ import { BusinessForm, BusinessProfileValues } from "@/components/settings/Busin
 import { BrandingSettings, InvoiceDefaultsValues } from "@/components/settings/BrandingSettings";
 import { ConnectedAccounts } from "@/components/settings/ConnectedAccounts";
 import { FeedbackPanel } from "@/components/settings/FeedbackPanel";
+import { PasswordSecurityForm } from "@/components/settings/PasswordSecurityForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,10 @@ interface SettingsPayload {
     user: { id: string; name: string; email: string };
     profile: BusinessProfileValues | null;
     invoiceSettings: Partial<InvoiceDefaultsValues> | null;
+    security: {
+      hasPassword: boolean;
+      oauthProviders: string[];
+    };
   };
 }
 
@@ -75,19 +80,34 @@ export default function SettingsPage(): JSX.Element {
           </TabsList>
 
           <TabsContent value="business">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sender Profile</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BusinessForm
-                  accountEmail={payload?.user.email}
-                  accountName={payload?.user.name}
-                  initialValues={payload?.profile || undefined}
-                  onSaved={() => void mutate()}
-                />
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sender Profile</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BusinessForm
+                    accountEmail={payload?.user.email}
+                    accountName={payload?.user.name}
+                    initialValues={payload?.profile || undefined}
+                    onSaved={() => void mutate()}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Password Security</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PasswordSecurityForm
+                    hasPassword={Boolean(payload?.security?.hasPassword)}
+                    oauthProviders={payload?.security?.oauthProviders || []}
+                    onSaved={() => void mutate()}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="invoice">

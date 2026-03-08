@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ClientForm } from "@/components/client/ClientForm";
+import { BackButton } from "@/components/layout/BackButton";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,7 +83,8 @@ export default function ClientDetailPage(): JSX.Element {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="space-y-2">
+          <BackButton href="/clients" label="Back to Clients" />
           <h1 className="text-2xl font-semibold text-ink">{client.name}</h1>
           <p className="text-sm text-ink-muted">{client.email}</p>
         </div>

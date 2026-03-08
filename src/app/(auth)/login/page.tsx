@@ -22,6 +22,7 @@ export default function LoginPage(): JSX.Element {
   const router = useRouter();
   const [oauthLoading, setOauthLoading] = useState<"google" | "github" | null>(null);
   const [availableProviders, setAvailableProviders] = useState({ google: false, github: false });
+  const [callbackUrl, setCallbackUrl] = useState("/");
   const {
     register,
     handleSubmit,
@@ -41,19 +42,20 @@ export default function LoginPage(): JSX.Element {
       password: values.password,
       remember: values.remember ? "true" : "false",
       redirect: false,
-      callbackUrl: "/",
+      callbackUrl,
     });
 
     if (!result || result.error) {
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: "Invalid email or password.",
+        description:
+          "Invalid credentials. If this account was created with Google or GitHub, continue with that provider or set a password from Settings.",
       });
       return;
     }
 
-    router.push("/");
+    router.push(callbackUrl);
     router.refresh();
   };
 
@@ -67,10 +69,15 @@ export default function LoginPage(): JSX.Element {
       return;
     }
     setOauthLoading(provider);
-    await signIn(provider, { callbackUrl: "/" });
+    await signIn(provider, { callbackUrl });
   };
 
   useEffect(() => {
+    const callbackUrlParam = new URLSearchParams(window.location.search).get("callbackUrl");
+    if (callbackUrlParam && callbackUrlParam.startsWith("/")) {
+      setCallbackUrl(callbackUrlParam);
+    }
+
     const loadProviders = async (): Promise<void> => {
       const providers = await getProviders();
       setAvailableProviders({
@@ -154,6 +161,17 @@ export default function LoginPage(): JSX.Element {
             <Link className="font-semibold text-slate-900 hover:underline dark:text-slate-100" href="/register">
               Sign Up
             </Link>
+          </p>
+          <p className="mt-4 text-center text-xs text-ink-muted">
+            By continuing, you agree to our{" "}
+            <Link className="text-brand-700 hover:underline" href="/terms">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link className="text-brand-700 hover:underline" href="/privacy">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </div>
       </div>

@@ -36,8 +36,7 @@ export default function RootLayout({
               try {
                 var key = 'ledgerbloom-theme';
                 var stored = localStorage.getItem(key);
-                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                var theme = stored || (prefersDark ? 'dark' : 'light');
+                var theme = stored || 'light';
                 if (theme === 'dark') document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
               } catch (e) {}

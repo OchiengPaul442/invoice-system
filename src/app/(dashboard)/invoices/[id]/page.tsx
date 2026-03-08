@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Download, ExternalLink, Mail, Pencil, Send, Trash2 } from "lucide-react";
 import useSWR from "swr";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
+import { BackButton } from "@/components/layout/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -202,6 +203,7 @@ export default function InvoiceDetailPage(): JSX.Element {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="space-y-1">
+          <BackButton className="mb-2" href="/invoices" label="Back to Invoices" />
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-ink">{invoice.invoiceNumber}</h1>
             <StatusBadge status={invoice.status} />
