@@ -28,7 +28,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   try {
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10));
+    const page = Math.max(
+      1,
+      Number.parseInt(searchParams.get("page") || "1", 10),
+    );
     const limit = Math.min(
       100,
       Math.max(1, Number.parseInt(searchParams.get("limit") || "20", 10)),
@@ -56,7 +59,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       ];
     }
 
-    const allowedSortFields = new Set(["createdAt", "dueDate", "total", "invoiceNumber"]);
+    const allowedSortFields = new Set([
+      "createdAt",
+      "dueDate",
+      "total",
+      "invoiceNumber",
+    ]);
     const orderByField = allowedSortFields.has(sortBy) ? sortBy : "createdAt";
 
     const [invoices, total] = await Promise.all([
@@ -131,7 +139,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       data.discountType ?? null,
       data.discountValue,
     );
-    const invoiceNumber = await generateInvoiceNumber(session.user.id);
+
+    let invoiceNumber: string;
+    if (data.invoiceNumber?.trim()) {
+      // Check uniqueness of custom invoice number for this user
+      const existing = await prisma.invoice.findFirst({
+        where: {
+          userId: session.user.id,
+          invoiceNumber: data.invoiceNumber.trim(),
+        },
+        select: { id: true },
+      });
+      if (existing) {
+        return NextResponse.json(
+          { success: false, error: "Invoice number already exists" },
+          { status: 409 },
+        );
+      }
+      invoiceNumber = data.invoiceNumber.trim();
+    } else {
+      invoiceNumber = await generateInvoiceNumber(session.user.id);
+    }
 
     const invoice = await prisma.invoice.create({
       data: {
@@ -146,7 +174,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         servicePeriodStart: data.servicePeriodStart
           ? new Date(data.servicePeriodStart)
           : null,
-        servicePeriodEnd: data.servicePeriodEnd ? new Date(data.servicePeriodEnd) : null,
+        servicePeriodEnd: data.servicePeriodEnd
+          ? new Date(data.servicePeriodEnd)
+          : null,
         billToName: data.billToName,
         billToEmail: data.billToEmail,
         billToCompany: data.billToCompany,
@@ -155,8 +185,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         billToCountry: data.billToCountry,
         billToTaxId: data.billToTaxId,
         lineItems: lineItems as unknown as Prisma.InputJsonValue,
-        milestones: (data.milestones ??
-          null) as unknown as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue,
+        milestones: (data.milestones ?? null) as unknown as
+          | Prisma.NullableJsonNullValueInput
+          | Prisma.InputJsonValue,
         currency: data.currency,
         subtotal: totals.subtotal,
         discountType: data.discountType,

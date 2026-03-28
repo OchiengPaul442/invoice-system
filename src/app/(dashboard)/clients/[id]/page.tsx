@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { ClientForm } from "@/components/client/ClientForm";
 import { BackButton } from "@/components/layout/BackButton";
 import { StatusBadge } from "@/components/invoice/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface ClientInvoice {
@@ -40,14 +42,18 @@ interface ClientDetail {
 
 export default function ClientDetailPage(): JSX.Element {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [client, setClient] = useState<ClientDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const load = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/clients/${params.id}`, { cache: "no-store" });
+      const response = await fetch(`/api/clients/${params.id}`, {
+        cache: "no-store",
+      });
       const payload = (await response.json()) as {
         success: boolean;
         data?: ClientDetail;
@@ -89,11 +95,58 @@ export default function ClientDetailPage(): JSX.Element {
           <p className="text-sm text-ink-muted">{client.email}</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setShowEdit((value) => !value)} variant="outline">
+          <Button
+            variant="destructive"
+            disabled={isDeleting}
+            onClick={async () => {
+              if (
+                !window.confirm(
+                  `Delete client "${client.name}"? This will deactivate the client.`,
+                )
+              )
+                return;
+              setIsDeleting(true);
+              try {
+                const res = await fetch(`/api/clients/${client.id}`, {
+                  method: "DELETE",
+                });
+                const data = (await res.json()) as {
+                  success: boolean;
+                  error?: string;
+                };
+                if (!res.ok || !data.success)
+                  throw new Error(data.error || "Failed to delete");
+                toast({
+                  title: "Client deleted",
+                  description: `${client.name} has been removed.`,
+                });
+                router.push("/clients");
+              } catch (err) {
+                toast({
+                  variant: "destructive",
+                  title: "Delete failed",
+                  description:
+                    err instanceof Error
+                      ? err.message
+                      : "Could not delete client",
+                });
+                setIsDeleting(false);
+              }
+            }}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {isDeleting ? "Deleting..." : "Delete"}
+          </Button>
+          <Button
+            onClick={() => setShowEdit((value) => !value)}
+            variant="outline"
+          >
             {showEdit ? "Close Edit" : "Edit Client"}
           </Button>
           <Button asChild>
-            <Link href={`/invoices/new?clientId=${client.id}`}>New Invoice for Client</Link>
+            <Link href={`/invoices/new?clientId=${client.id}`}>
+              New Invoice for Client
+            </Link>
           </Button>
         </div>
       </div>
@@ -136,7 +189,9 @@ export default function ClientDetailPage(): JSX.Element {
         </CardHeader>
         <CardContent>
           {!client.invoices.length ? (
-            <p className="text-sm text-ink-muted">No invoices for this client yet.</p>
+            <p className="text-sm text-ink-muted">
+              No invoices for this client yet.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -151,17 +206,30 @@ export default function ClientDetailPage(): JSX.Element {
                 </thead>
                 <tbody>
                   {client.invoices.map((invoice) => (
-                    <tr key={invoice.id} className="border-b border-surface-border/70">
-                      <td className="py-2 font-medium text-ink">{invoice.invoiceNumber}</td>
+                    <tr
+                      key={invoice.id}
+                      className="border-b border-surface-border/70"
+                    >
+                      <td className="py-2 font-medium text-ink">
+                        {invoice.invoiceNumber}
+                      </td>
                       <td className="py-2 text-ink">
-                        {formatCurrency(Number(invoice.total), invoice.currency)}
+                        {formatCurrency(
+                          Number(invoice.total),
+                          invoice.currency,
+                        )}
                       </td>
                       <td className="py-2">
                         <StatusBadge status={invoice.status} />
                       </td>
-                      <td className="py-2 text-ink-muted">{formatDate(invoice.dueDate)}</td>
+                      <td className="py-2 text-ink-muted">
+                        {formatDate(invoice.dueDate)}
+                      </td>
                       <td className="py-2">
-                        <Link className="text-brand-600 hover:underline" href={`/invoices/${invoice.id}`}>
+                        <Link
+                          className="text-brand-600 hover:underline"
+                          href={`/invoices/${invoice.id}`}
+                        >
                           View
                         </Link>
                       </td>

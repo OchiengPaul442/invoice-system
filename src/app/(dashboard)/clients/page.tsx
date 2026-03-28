@@ -28,15 +28,19 @@ export default function ClientsPage(): JSX.Element {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDeferredSearch(search.trim()), 250);
+    const timer = window.setTimeout(
+      () => setDeferredSearch(search.trim()),
+      250,
+    );
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  const { data, isLoading, mutate } = useSWR<{ success: boolean; data?: ClientItem[] }>(
-    `/api/clients?search=${encodeURIComponent(deferredSearch)}`,
-    jsonFetcher,
-    { revalidateOnFocus: true },
-  );
+  const { data, isLoading, mutate } = useSWR<{
+    success: boolean;
+    data?: ClientItem[];
+  }>(`/api/clients?search=${encodeURIComponent(deferredSearch)}`, jsonFetcher, {
+    revalidateOnFocus: true,
+  });
   const clients = data?.data || [];
 
   return (
@@ -108,13 +112,17 @@ export default function ClientsPage(): JSX.Element {
               id={client.id}
               invoiceCount={client._count?.invoices ?? 0}
               name={client.name}
+              onDeleted={() => void mutate()}
             />
           ))}
         </div>
       )}
 
       <div>
-        <Link className="text-sm text-brand-600 hover:underline" href="/invoices/new">
+        <Link
+          className="text-sm text-brand-600 hover:underline"
+          href="/invoices/new"
+        >
           Create a new invoice
         </Link>
       </div>

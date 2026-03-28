@@ -9,7 +9,12 @@ import { toast } from "@/hooks/use-toast";
 import { trackEvent } from "@/lib/analytics";
 import { formatCurrency, SUPPORTED_CURRENCIES } from "@/lib/utils";
 import { useInvoiceBuilderStore } from "@/store/invoice-builder.store";
-import { BillingType, LineItem, Milestone, TemplateType } from "@/types/invoice";
+import {
+  BillingType,
+  LineItem,
+  Milestone,
+  TemplateType,
+} from "@/types/invoice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,15 +42,45 @@ interface ClientOption {
   taxId?: string | null;
 }
 
-const templateOptions: Array<{ value: TemplateType; label: string; description: string }> = [
-  { value: "CLASSIC", label: "Classic", description: "General freelance and consulting" },
-  { value: "MODERN", label: "Modern", description: "Design-forward client invoices" },
-  { value: "MINIMAL", label: "Minimal", description: "No-frills concise billing" },
-  { value: "MILESTONE", label: "Milestone", description: "Project phase billing" },
-  { value: "RETAINER", label: "Retainer", description: "Recurring monthly engagement" },
+const templateOptions: Array<{
+  value: TemplateType;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "CLASSIC",
+    label: "Classic",
+    description: "General freelance and consulting",
+  },
+  {
+    value: "MODERN",
+    label: "Modern",
+    description: "Design-forward client invoices",
+  },
+  {
+    value: "MINIMAL",
+    label: "Minimal",
+    description: "No-frills concise billing",
+  },
+  {
+    value: "MILESTONE",
+    label: "Milestone",
+    description: "Project phase billing",
+  },
+  {
+    value: "RETAINER",
+    label: "Retainer",
+    description: "Recurring monthly engagement",
+  },
 ];
 
-const billingTypes: BillingType[] = ["HOURLY", "FIXED", "RETAINER", "MILESTONE", "LICENSE"];
+const billingTypes: BillingType[] = [
+  "HOURLY",
+  "FIXED",
+  "RETAINER",
+  "MILESTONE",
+  "LICENSE",
+];
 
 interface SaveResponse {
   success: boolean;
@@ -57,12 +92,16 @@ interface InvoiceBuilderProps {
   invoiceId?: string;
 }
 
-export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element {
+export function InvoiceBuilder({
+  invoiceId,
+}: InvoiceBuilderProps): JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { downloadPDF, isDownloading } = usePDFDownload();
   const { clients } = useClients<ClientOption>("isActive=true");
-  const [activeSaveAction, setActiveSaveAction] = useState<"draft" | "download" | null>(null);
+  const [activeSaveAction, setActiveSaveAction] = useState<
+    "draft" | "download" | null
+  >(null);
   const [isLoadingInvoice, setIsLoadingInvoice] = useState(Boolean(invoiceId));
 
   const store = useInvoiceBuilderStore();
@@ -101,7 +140,8 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
           };
         };
 
-        if (!response.ok || !payload.success || !payload.data?.invoiceSettings) return;
+        if (!response.ok || !payload.success || !payload.data?.invoiceSettings)
+          return;
 
         const defaults = payload.data.invoiceSettings;
 
@@ -140,7 +180,9 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
 
     const load = async (): Promise<void> => {
       try {
-        const response = await fetch(`/api/invoices/${invoiceId}`, { cache: "no-store" });
+        const response = await fetch(`/api/invoices/${invoiceId}`, {
+          cache: "no-store",
+        });
         const payload = (await response.json()) as {
           success: boolean;
           data?: Record<string, unknown>;
@@ -194,7 +236,9 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
           servicePeriodStart: data.servicePeriodStart
             ? data.servicePeriodStart.split("T")[0]
             : null,
-          servicePeriodEnd: data.servicePeriodEnd ? data.servicePeriodEnd.split("T")[0] : null,
+          servicePeriodEnd: data.servicePeriodEnd
+            ? data.servicePeriodEnd.split("T")[0]
+            : null,
           projectName: data.projectName || "",
           projectDescription: data.projectDescription || "",
           lineItems: data.lineItems,
@@ -227,7 +271,8 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
         toast({
           variant: "destructive",
           title: "Load failed",
-          description: error instanceof Error ? error.message : "Unable to load invoice",
+          description:
+            error instanceof Error ? error.message : "Unable to load invoice",
         });
       } finally {
         setIsLoadingInvoice(false);
@@ -329,6 +374,7 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
   const payload = useMemo(
     () => ({
       clientId: store.clientId || undefined,
+      invoiceNumber: store.invoiceNumber || undefined,
       templateType: store.templateType,
       billingType: store.billingType,
       issueDate: store.issueDate,
@@ -366,11 +412,14 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
   const saveInvoice = async (downloadAfterSave: boolean): Promise<void> => {
     setActiveSaveAction(downloadAfterSave ? "download" : "draft");
     try {
-      const response = await fetch(invoiceId ? `/api/invoices/${invoiceId}` : "/api/invoices", {
-        method: invoiceId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        invoiceId ? `/api/invoices/${invoiceId}` : "/api/invoices",
+        {
+          method: invoiceId ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
       const data = (await response.json()) as SaveResponse;
 
       if (!response.ok || !data.success) {
@@ -385,7 +434,8 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
       });
 
       const id = data.data?.id ?? invoiceId;
-      const number = data.data?.invoiceNumber ?? store.invoiceNumber ?? "invoice";
+      const number =
+        data.data?.invoiceNumber ?? store.invoiceNumber ?? "invoice";
       trackEvent("invoice_saved", {
         invoice_id: id,
         invoice_number: number,
@@ -405,7 +455,9 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
             variant: "destructive",
             title: "Download failed",
             description:
-              error instanceof Error ? error.message : "Invoice saved but PDF download failed.",
+              error instanceof Error
+                ? error.message
+                : "Invoice saved but PDF download failed.",
           });
         }
       }
@@ -417,7 +469,8 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
       toast({
         variant: "destructive",
         title: "Save failed",
-        description: error instanceof Error ? error.message : "Unable to save invoice",
+        description:
+          error instanceof Error ? error.message : "Unable to save invoice",
       });
     } finally {
       setActiveSaveAction(null);
@@ -479,7 +532,9 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
               <Label>Select Existing Client</Label>
               <Select
                 value={store.clientId ?? "__none__"}
-                onValueChange={(value) => setField("clientId", value === "__none__" ? null : value)}
+                onValueChange={(value) =>
+                  setField("clientId", value === "__none__" ? null : value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a client" />
@@ -500,7 +555,10 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
                 <Input
                   value={store.billTo.name}
                   onChange={(event) =>
-                    setField("billTo", { ...store.billTo, name: event.target.value })
+                    setField("billTo", {
+                      ...store.billTo,
+                      name: event.target.value,
+                    })
                   }
                 />
               </div>
@@ -509,7 +567,10 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
                 <Input
                   value={store.billTo.email}
                   onChange={(event) =>
-                    setField("billTo", { ...store.billTo, email: event.target.value })
+                    setField("billTo", {
+                      ...store.billTo,
+                      email: event.target.value,
+                    })
                   }
                 />
               </div>
@@ -518,7 +579,10 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
                 <Input
                   value={store.billTo.company || ""}
                   onChange={(event) =>
-                    setField("billTo", { ...store.billTo, company: event.target.value })
+                    setField("billTo", {
+                      ...store.billTo,
+                      company: event.target.value,
+                    })
                   }
                 />
               </div>
@@ -527,7 +591,10 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
                 <Input
                   value={store.billTo.address || ""}
                   onChange={(event) =>
-                    setField("billTo", { ...store.billTo, address: event.target.value })
+                    setField("billTo", {
+                      ...store.billTo,
+                      address: event.target.value,
+                    })
                   }
                 />
               </div>
@@ -540,6 +607,21 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
             <CardTitle>Invoice Meta</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1 md:col-span-2">
+              <Label>Invoice Number</Label>
+              <Input
+                placeholder="Leave empty to auto-generate (e.g. INV-2026-0001)"
+                value={store.invoiceNumber}
+                onChange={(event) =>
+                  setField("invoiceNumber", event.target.value)
+                }
+              />
+              <p className="text-xs text-ink-muted">
+                {store.invoiceNumber
+                  ? "Custom invoice number"
+                  : "Will be auto-generated on save"}
+              </p>
+            </div>
             <div className="space-y-1">
               <Label>Issue Date</Label>
               <Input
@@ -560,7 +642,9 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
               <Label>Billing Type</Label>
               <Select
                 value={store.billingType}
-                onValueChange={(value) => setField("billingType", value as BillingType)}
+                onValueChange={(value) =>
+                  setField("billingType", value as BillingType)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -596,14 +680,18 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
               <Label>Project Name</Label>
               <Input
                 value={store.projectName}
-                onChange={(event) => setField("projectName", event.target.value)}
+                onChange={(event) =>
+                  setField("projectName", event.target.value)
+                }
               />
             </div>
             <div className="space-y-1 md:col-span-2">
               <Label>Project Description</Label>
               <Textarea
                 value={store.projectDescription}
-                onChange={(event) => setField("projectDescription", event.target.value)}
+                onChange={(event) =>
+                  setField("projectDescription", event.target.value)
+                }
               />
             </div>
           </CardContent>
@@ -628,7 +716,12 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
               <Select
                 value={store.discountType ?? "__none__"}
                 onValueChange={(value) =>
-                  setField("discountType", value === "__none__" ? null : (value as "percent" | "fixed"))
+                  setField(
+                    "discountType",
+                    value === "__none__"
+                      ? null
+                      : (value as "percent" | "fixed"),
+                  )
                 }
               >
                 <SelectTrigger>
@@ -648,7 +741,9 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
                 step="any"
                 type="number"
                 value={store.discountValue}
-                onChange={(event) => setField("discountValue", Number(event.target.value || 0))}
+                onChange={(event) =>
+                  setField("discountValue", Number(event.target.value || 0))
+                }
               />
             </div>
             <div className="space-y-1">
@@ -666,21 +761,27 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
                 step="any"
                 type="number"
                 value={store.taxRate}
-                onChange={(event) => setField("taxRate", Number(event.target.value || 0))}
+                onChange={(event) =>
+                  setField("taxRate", Number(event.target.value || 0))
+                }
               />
             </div>
             <div className="space-y-1 md:col-span-2">
               <Label>Payment Terms</Label>
               <Input
                 value={store.paymentTerms}
-                onChange={(event) => setField("paymentTerms", event.target.value)}
+                onChange={(event) =>
+                  setField("paymentTerms", event.target.value)
+                }
               />
             </div>
             <div className="space-y-1 md:col-span-2">
               <Label>Payment Instructions</Label>
               <Textarea
                 value={store.paymentInstructions}
-                onChange={(event) => setField("paymentInstructions", event.target.value)}
+                onChange={(event) =>
+                  setField("paymentInstructions", event.target.value)
+                }
               />
             </div>
             <div className="space-y-1 md:col-span-2">
@@ -728,7 +829,8 @@ export function InvoiceBuilder({ invoiceId }: InvoiceBuilderProps): JSX.Element 
                   : "Save & Download PDF"}
             </Button>
             <p className="text-xs text-ink-muted">
-              Save Draft keeps the invoice in draft. Save & Download PDF saves and immediately exports a PDF copy.
+              Save Draft keeps the invoice in draft. Save & Download PDF saves
+              and immediately exports a PDF copy.
             </p>
           </div>
         </div>

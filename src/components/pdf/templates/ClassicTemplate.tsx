@@ -9,17 +9,36 @@ import { PDFTemplateProps } from "@/components/pdf/shared/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const styles = StyleSheet.create({
-  page: { fontFamily: "Helvetica", fontSize: 10, color: "#1e293b", padding: 44 },
-  header: { flexDirection: "row", justifyContent: "space-between", marginBottom: 24 },
+  page: {
+    fontFamily: "Helvetica",
+    fontSize: 10,
+    color: "#1e293b",
+    padding: 44,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
   logo: { width: 90, height: 44, objectFit: "contain" },
-  businessName: { fontSize: 14, fontFamily: "Helvetica-Bold", color: "#0f172a", marginTop: 6 },
-  businessDetail: { fontSize: 9, color: "#64748b", marginTop: 2 },
-  invoiceTitle: { fontSize: 28, fontFamily: "Helvetica-Bold", letterSpacing: 2 },
-  invoiceMeta: { marginTop: 3, fontSize: 9, color: "#64748b" },
-  divider: { borderBottomWidth: 1, borderBottomColor: "#e2e8f0", marginBottom: 14 },
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
-  left: { flex: 1, marginRight: 12 },
-  right: { flex: 1, marginLeft: 12, alignItems: "flex-end" },
+  senderName: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: "#0f172a",
+    marginTop: 6,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  senderDetail: { fontSize: 9, color: "#64748b", marginTop: 2 },
+  invoiceLabel: { fontSize: 12, fontFamily: "Helvetica-Bold" },
+  invoiceMeta: { fontSize: 9, color: "#64748b", marginTop: 2 },
+  divider: { borderBottomWidth: 2, marginBottom: 16 },
+  detailsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  detailsCol: { flex: 1 },
   sectionLabel: {
     fontSize: 8,
     fontFamily: "Helvetica-Bold",
@@ -28,96 +47,170 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   detail: { fontSize: 10, color: "#0f172a", marginTop: 2 },
+  detailBold: {
+    fontSize: 10,
+    color: "#0f172a",
+    marginTop: 2,
+    fontFamily: "Helvetica-Bold",
+  },
   detailMuted: { fontSize: 9, color: "#64748b", marginTop: 2 },
-  tableHeader: { flexDirection: "row", borderRadius: 2, paddingHorizontal: 6, paddingVertical: 8 },
-  tableHeaderCell: { fontSize: 9, fontFamily: "Helvetica-Bold", textTransform: "uppercase" },
-  tableRow: { flexDirection: "row", paddingHorizontal: 6, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
-  colDescription: { flex: 3 },
-  colQty: { flex: 1, textAlign: "center" },
-  colUnit: { flex: 1, textAlign: "center" },
-  colPrice: { flex: 1.5, textAlign: "right" },
-  colAmount: { flex: 1.5, textAlign: "right" },
+  tableHeader: {
+    flexDirection: "row",
+    borderRadius: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  tableHeaderText: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  tableRow: {
+    flexDirection: "row",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f5f9",
+  },
+  tableRowAlt: { backgroundColor: "#fafafa" },
+  colDesc: { flex: 3 },
+  colQty: { flex: 0.8, textAlign: "center" },
+  colUnit: { flex: 0.8, textAlign: "center" },
+  colPrice: { flex: 1.4, textAlign: "right" },
+  colAmount: { flex: 1.4, textAlign: "right" },
   notes: { marginTop: 16 },
   notesText: { fontSize: 9, color: "#475569", marginTop: 2 },
 });
 
-export function ClassicTemplate({ invoice, profile }: PDFTemplateProps): JSX.Element {
+export function ClassicTemplate({
+  invoice,
+  profile,
+}: PDFTemplateProps): JSX.Element {
   const color = invoice.primaryColor || profile?.primaryColor || "#0f766e";
-  const senderName = profile?.businessName || profile?.senderName || "Your Business";
+  const senderName =
+    profile?.businessName || profile?.senderName || "Your Business";
   const senderEmail = profile?.businessEmail || profile?.senderEmail;
   const lineItems = toLineItems(invoice.lineItems);
 
   return (
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
-        <View>
+        <View style={{ maxWidth: "55%" }}>
           {invoice.showLogo && profile?.logoPath ? (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image style={styles.logo} src={`${process.env.NEXT_PUBLIC_APP_URL}${profile.logoPath}`} />
+            <Image
+              style={styles.logo}
+              src={`${process.env.NEXT_PUBLIC_APP_URL}${profile.logoPath}`}
+            />
           ) : null}
-          <Text style={styles.businessName}>{senderName}</Text>
-          {profile?.businessAddress ? <Text style={styles.businessDetail}>{profile.businessAddress}</Text> : null}
+          <Text style={styles.senderName}>{senderName}</Text>
+          {profile?.businessAddress ? (
+            <Text style={styles.senderDetail}>{profile.businessAddress}</Text>
+          ) : null}
           {profile?.businessCity ? (
-            <Text style={styles.businessDetail}>
+            <Text style={styles.senderDetail}>
               {profile.businessCity}
               {profile.businessCountry ? `, ${profile.businessCountry}` : ""}
             </Text>
           ) : null}
-          {senderEmail ? <Text style={styles.businessDetail}>{senderEmail}</Text> : null}
-          {profile?.businessPhone ? <Text style={styles.businessDetail}>{profile.businessPhone}</Text> : null}
+          {senderEmail ? (
+            <Text style={styles.senderDetail}>{senderEmail}</Text>
+          ) : null}
+          {profile?.businessPhone ? (
+            <Text style={styles.senderDetail}>{profile.businessPhone}</Text>
+          ) : null}
         </View>
         <View style={{ alignItems: "flex-end" }}>
-          <Text style={[styles.invoiceTitle, { color }]}>INVOICE</Text>
-          <Text style={styles.detail}>{invoice.invoiceNumber}</Text>
-          <Text style={styles.invoiceMeta}>Issued: {formatDate(invoice.issueDate)}</Text>
-          <Text style={styles.invoiceMeta}>Due: {formatDate(invoice.dueDate)}</Text>
-          <Text style={styles.invoiceMeta}>Status: {invoice.status}</Text>
+          <Text style={[styles.invoiceLabel, { color }]}>
+            Invoice {invoice.invoiceNumber}
+          </Text>
+          <Text style={styles.invoiceMeta}>
+            Due {formatDate(invoice.dueDate)}
+          </Text>
         </View>
       </View>
 
       <View style={[styles.divider, { borderBottomColor: color }]} />
 
-      <View style={styles.row}>
-        <View style={styles.left}>
+      <View style={styles.detailsRow}>
+        <View style={styles.detailsCol}>
           <Text style={[styles.sectionLabel, { color }]}>Bill To</Text>
-          <Text style={[styles.detail, { fontFamily: "Helvetica-Bold" }]}>{invoice.billToName}</Text>
-          {invoice.billToCompany ? <Text style={styles.detail}>{invoice.billToCompany}</Text> : null}
+          <Text style={styles.detailBold}>{invoice.billToName}</Text>
+          {invoice.billToCompany ? (
+            <Text style={styles.detail}>{invoice.billToCompany}</Text>
+          ) : null}
           <Text style={styles.detailMuted}>{invoice.billToEmail}</Text>
-          {invoice.billToAddress ? <Text style={styles.detailMuted}>{invoice.billToAddress}</Text> : null}
+          {invoice.billToAddress ? (
+            <Text style={styles.detailMuted}>{invoice.billToAddress}</Text>
+          ) : null}
           {invoice.billToCity ? (
             <Text style={styles.detailMuted}>
               {invoice.billToCity}
               {invoice.billToCountry ? `, ${invoice.billToCountry}` : ""}
             </Text>
           ) : null}
-        </View>
-        <View style={styles.right}>
-          <Text style={[styles.sectionLabel, { color }]}>Project</Text>
-          <Text style={[styles.detail, { fontFamily: "Helvetica-Bold", textAlign: "right" }]}>
-            {invoice.projectName || "Project"}
-          </Text>
-          {invoice.projectDescription ? (
-            <Text style={[styles.detailMuted, { textAlign: "right", maxWidth: 200 }]}>
-              {invoice.projectDescription}
+          {invoice.billToTaxId ? (
+            <Text style={styles.detailMuted}>
+              Tax ID: {invoice.billToTaxId}
             </Text>
           ) : null}
         </View>
+        <View style={[styles.detailsCol, { alignItems: "flex-end" }]}>
+          <Text style={[styles.sectionLabel, { color }]}>Project</Text>
+          <Text style={[styles.detailBold, { textAlign: "right" }]}>
+            {invoice.projectName || "General Services"}
+          </Text>
+          {invoice.projectDescription ? (
+            <Text
+              style={[
+                styles.detailMuted,
+                { textAlign: "right", maxWidth: 200 },
+              ]}
+            >
+              {invoice.projectDescription}
+            </Text>
+          ) : null}
+          <Text
+            style={[styles.detailMuted, { marginTop: 8, textAlign: "right" }]}
+          >
+            Issued: {formatDate(invoice.issueDate)}
+          </Text>
+          <Text style={[styles.detailMuted, { textAlign: "right" }]}>
+            Due: {formatDate(invoice.dueDate)}
+          </Text>
+        </View>
       </View>
 
-      <View style={[styles.tableHeader, { backgroundColor: `${color}15` }]}>
-        <Text style={[styles.tableHeaderCell, styles.colDescription, { color }]}>Description</Text>
-        <Text style={[styles.tableHeaderCell, styles.colQty, { color }]}>Qty</Text>
-        <Text style={[styles.tableHeaderCell, styles.colUnit, { color }]}>Unit</Text>
-        <Text style={[styles.tableHeaderCell, styles.colPrice, { color }]}>Unit Price</Text>
-        <Text style={[styles.tableHeaderCell, styles.colAmount, { color }]}>Amount</Text>
+      <View style={[styles.tableHeader, { backgroundColor: `${color}18` }]}>
+        <Text style={[styles.tableHeaderText, styles.colDesc, { color }]}>
+          Description
+        </Text>
+        <Text style={[styles.tableHeaderText, styles.colQty, { color }]}>
+          Qty
+        </Text>
+        <Text style={[styles.tableHeaderText, styles.colUnit, { color }]}>
+          Unit
+        </Text>
+        <Text style={[styles.tableHeaderText, styles.colPrice, { color }]}>
+          Unit Price
+        </Text>
+        <Text style={[styles.tableHeaderText, styles.colAmount, { color }]}>
+          Amount
+        </Text>
       </View>
 
       {lineItems.map((item, index) => (
-        <View key={`${item.id || "line"}-${index}`} style={styles.tableRow}>
-          <Text style={[styles.colDescription]}>{item.description}</Text>
+        <View
+          key={`${item.id || "line"}-${index}`}
+          style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}
+        >
+          <Text style={styles.colDesc}>{item.description}</Text>
           <Text style={styles.colQty}>{item.quantity}</Text>
           <Text style={styles.colUnit}>{item.unit}</Text>
-          <Text style={styles.colPrice}>{formatCurrency(item.unitPrice, invoice.currency)}</Text>
+          <Text style={styles.colPrice}>
+            {formatCurrency(item.unitPrice, invoice.currency)}
+          </Text>
           <Text style={[styles.colAmount, { fontFamily: "Helvetica-Bold" }]}>
             {formatCurrency(item.amount, invoice.currency)}
           </Text>
@@ -141,7 +234,9 @@ export function ClassicTemplate({ invoice, profile }: PDFTemplateProps): JSX.Ele
         color={color}
         mobileMoneyNumber={profile?.mobileMoneyNumber}
         mobileMoneyProvider={profile?.mobileMoneyProvider}
-        paymentInstructions={invoice.paymentInstructions || profile?.paymentNotes}
+        paymentInstructions={
+          invoice.paymentInstructions || profile?.paymentNotes
+        }
         swiftCode={profile?.swiftCode}
       />
 

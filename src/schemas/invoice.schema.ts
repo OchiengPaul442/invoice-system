@@ -21,7 +21,14 @@ export const milestoneSchema = z.object({
 
 export const invoiceCreateSchema = z.object({
   clientId: z.string().optional(),
-  templateType: z.enum(["CLASSIC", "MODERN", "MINIMAL", "MILESTONE", "RETAINER"]),
+  invoiceNumber: z.string().max(50).optional(),
+  templateType: z.enum([
+    "CLASSIC",
+    "MODERN",
+    "MINIMAL",
+    "MILESTONE",
+    "RETAINER",
+  ]),
   billingType: z.enum(["HOURLY", "FIXED", "RETAINER", "MILESTONE", "LICENSE"]),
   issueDate: z.string(),
   dueDate: z.string(),
@@ -51,7 +58,15 @@ export const invoiceCreateSchema = z.object({
   accentColor: z.string().optional(),
   showLogo: z.boolean().default(true),
   status: z
-    .enum(["DRAFT", "SENT", "VIEWED", "PARTIAL", "PAID", "OVERDUE", "CANCELLED"])
+    .enum([
+      "DRAFT",
+      "SENT",
+      "VIEWED",
+      "PARTIAL",
+      "PAID",
+      "OVERDUE",
+      "CANCELLED",
+    ])
     .optional(),
 });
 
